@@ -1,6 +1,6 @@
 # ECE1779 Introduction to Cloud Computing Project
 
-<b>Group 9: </b> Haotian Chen, Tony Sun, Weixuan Yang
+<b>Group 9: </b> Haotian Chen, Haozhe Sun, Weixuan Yang
 
 <b>Description:</b><br>
 
