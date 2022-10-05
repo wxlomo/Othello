@@ -5,7 +5,7 @@ from flask import render_template, url_for, request
 from app import getResult, webapp, memcache, memcacheStatistics,memcacheConfig
 from flask import json
 import datetime
-
+import mysql.connector
 
 
 
@@ -53,10 +53,20 @@ def invalidateKey(key):
 def refreshConfiguration():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
-    """read database for cache config
-    config = dbUtil.get_config()
-    memcacheConfig.capacity = config[0]
-    memcacheConfig.policy = config[1]
+    cnx = mysql.connector.connect(user='scott', password='password',
+                              host='127.0.0.1',
+                              database='employees')
+    cursor = cnx.cursor()
+    query =  "SELECT `capacity`, `lru` FROM memcache_config;"
+    cursor.execute(query)
+    memcacheConfig.capacity = cursor[0]
+    if cursor[1]:
+        memcacheConfig.policy = 'LRU'
+    else:
+        memcacheConfig.policy = 'Random'
+    
+    cursor.close()
+    cnx.close()
     while (memcacheStatistics.get_size() > memcacheConfig.capacity*1024*1024):
         if memcacheConfig['policy'] == 'LRU':
             delvalue=memcache.popitem(False)[1]
@@ -64,7 +74,7 @@ def refreshConfiguration():
             memcacheStatistics.removeItem(size)
         else:
             delkey=random.choice(list(memcache.keys()))
-            delvalue = memcache[key]
+            delvalue = memcache[delkey]
             size=sys.getsizeof(delvalue)
             memcacheStatistics.removeItem(size)
             del memcache[delkey]
@@ -72,11 +82,8 @@ def refreshConfiguration():
         response=json.dumps("OK"),
         status=200,
         mimetype='application/json'
-    )
+        )
     return response
-    """
-    
-    
     
     
 @webapp.route('/get',methods=['POST'])
@@ -166,8 +173,22 @@ def put():
 @webapp.route('/statistic') 
 def statistic():
     s=memcacheStatistics.getStat()
+    
+    cnx = mysql.connector.connect(user='scott', password='password',
+                              host='127.0.0.1',
+                              database='employees')
+    cursor = cnx.cursor()
+    query =  ("INSERT INTO statistics "
+                "(`itemNum`, `totalSize`, `requestNum``missRate`, `hitRate`)" 
+                "VALUES ( {}, {}, {}, {}, {});")
+    cursor.execute(query,s)
+    
+    cnx.commit()
+    cursor.close()
+    cnx.close()
+    
     response = webapp.response_class(
-        response=json.dumps(s),
+        response=json.dumps('OK'),
         status=200,
         mimetype='application/json'
     )
