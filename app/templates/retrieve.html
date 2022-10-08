@@ -58,7 +58,6 @@
                 <div class="inner cover">
                     <div class="image-cache" style="visibility: {{ vis-inv }};">
                         <h1>Not found</h1>
-                        <a href="{{url_for('index')}}" class="btn btn-default">Return</a>
                     </div>
                     <div class="image-cache" style="visibility: {{ vis-cache }};">
                         <h1>We find your image</h1>
@@ -71,6 +70,7 @@
                         <img src="{{ address }}">
                     </div>
                     <br>
+                    <a href="{{url_for('index')}}" class="btn btn-default">Return</a>
                 </div>
                 <div class="mastfoot">
                     <div class="inner">
