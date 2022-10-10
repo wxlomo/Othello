@@ -1,6 +1,6 @@
 <!--
- * upload.html
- * html code for the upload page of the gallery
+ * config.html
+ * html code for the configuration page of the gallery
  * Editor: Weixuan Yang
  * Date: October 04, 2022
 -->
@@ -12,8 +12,8 @@
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="{{  url_for('static', filename='css/bootstrap.min.css')  }}" rel="stylesheet">
-    <link href="{{  url_for('static', filename='css/cover.css')  }}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/cover.css')}}" rel="stylesheet">
     <title>Configuration</title>
 </head>
 
@@ -38,7 +38,7 @@
 
                 <form class="navbar-form navbar-left" action="/retrieve" method="post" enctype="multipart/form-data">
                     <div class="form-group">
-                        <input type="text" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
+                        <input type="text" name="key" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
                     </div>
                     <button type="submit" class="btn btn-info">Retrieve</button>
                 </form>
@@ -58,9 +58,9 @@
                 <div class="inner cover">
                     <h1>Memcache Configuration</h1>
                     <br>
-                    <form method="post" enctype="multipart/form-data" action="/config">
-                        <p class="lead">Current cache replacement policy is {{ policy }}. Switch to {{policyi}}: <input class="form-check-input" type="checkbox" id="policy" name="policy"></p>
-                        <p class="lead">Current cache capacity is {{ capa }} MB. Set to: <input type="number" style="width: 120px; color:black" name="capacity" value="{{ capa }}" required> MB</p>
+                    <form method="post" enctype="multipart/form-data" action="/putConfig">
+                        <p class="lead">Current cache replacement policy is {{policy}}. Switch to {{policyi}}: <input class="form-check-input" type="checkbox" id="policy" name="policy"></p>
+                        <p class="lead">Current cache capacity is {{capa}} MB. Set to: <input type="number" style="width: 120px; color:black" name="capacity" value="{{capa}}" required> MB</p>
                         <p class="lead">Clear the cache: <input class="form-check-input" type="checkbox" id="clear" name="clear"></p>
                         <button type="submit" class="btn btn-default">Confirm</button>
                     </form>

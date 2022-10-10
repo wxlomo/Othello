@@ -1,6 +1,6 @@
 <!--
- * upload.html
- * html code for the upload page of the gallery
+ * statistics.html
+ * html code for the memcache statistics page of the gallery
  * Editor: Weixuan Yang
  * Date: October 04, 2022
 -->
@@ -12,8 +12,8 @@
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="{{  url_for('static', filename='css/bootstrap.min.css')  }}" rel="stylesheet">
-    <link href="{{  url_for('static', filename='css/cover.css')  }}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/cover.css')}}" rel="stylesheet">
     <title>Statistics</title>
 </head>
 
@@ -38,7 +38,7 @@
 
                 <form class="navbar-form navbar-left" action="/retrieve" method="post" enctype="multipart/form-data">
                     <div class="form-group">
-                        <input type="text" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
+                        <input type="text" name="key" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
                     </div>
                     <button type="submit" class="btn btn-info">Retrieve</button>
                 </form>
@@ -68,11 +68,11 @@
                         </thead>
                         {% for row in cursor %}
                         <tr>
-                            <td>{{ row[0] }}</td>
-                            <td>{{ row[1] }}</td>
-                            <td>{{ row[2] }}</td>
-                            <td>{{ row[3] }}</td>
-                            <td>{{ row[4] }}</td>
+                            <td>{{row[0]}}</td>
+                            <td>{{row[1]}}</td>
+                            <td>{{row[2]}}</td>
+                            <td>{{row[3]}}</td>
+                            <td>{{row[4]}}</td>
                         </tr>
                         {% endfor %}
                     </table>

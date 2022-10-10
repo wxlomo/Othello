@@ -12,12 +12,12 @@
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="{{  url_for('static', filename='css/bootstrap.min.css')  }}" rel="stylesheet">
-    <link href="{{  url_for('static', filename='css/cover.css')  }}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/cover.css')}}" rel="stylesheet">
     <title>A Simple Gallery</title>
 </head>
 
-<body style="background-image: url({{  url_for('static', filename='img/index.jpg')  }}); background-size: cover;">
+<body style="background-image: url({{url_for('static', filename='img/index.jpg')}}); background-size: cover;">
     <nav class="navbar navbar-default navbar-fixed-top navbar-inverse" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -38,7 +38,7 @@
 
                 <form class="navbar-form navbar-left" action="/retrieve" method="post" enctype="multipart/form-data">
                     <div class="form-group">
-                        <input type="text" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
+                        <input type="text" name="key" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
                     </div>
                     <button type="submit" class="btn btn-info">Retrieve</button>
                 </form>

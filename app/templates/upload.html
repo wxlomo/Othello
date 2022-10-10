@@ -12,8 +12,8 @@
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="{{  url_for('static', filename='css/bootstrap.min.css')  }}" rel="stylesheet">
-    <link href="{{  url_for('static', filename='css/cover.css')  }}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/cover.css')}}" rel="stylesheet">
     <title>Upload</title>
 </head>
 
@@ -38,7 +38,7 @@
 
                 <form class="navbar-form navbar-left" action="/retrieve" method="post" enctype="multipart/form-data">
                     <div class="form-group">
-                        <input type="text" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
+                        <input type="text" name="key" class="form-control" style="width: 300px" placeholder="Enter the key to retrieve the image">
                     </div>
                     <button type="submit" class="btn btn-info">Retrieve</button>
                 </form>
@@ -56,10 +56,10 @@
         <div class="site-wrapper-inner">
             <div class="cover-container">
                 <div class="inner cover">
-                    <form method="post" enctype="multipart/form-data" action="/upload">
+                    <form method="post" enctype="multipart/form-data" action="/putImage">
                         <p class="lead"><a>Please select the image you want to upload from your storage,<br>and choose your own key for this image.</a></p>
-                        <p><input class="form-control-inverse" type="file" id="formFile" name="filename" accept="image/*" required></p>
-                        <input type="text" name="filekey" placeholder="Custom Image Key" size="89" style="color:black" maxlength="256" required></p>
+                        <p><input class="form-control-inverse" type="file" id="formFile" name="image" accept="image/*" required></p>
+                        <input type="text" name="key" placeholder="Custom Image Key" size="89" style="color:black" maxlength="100" required></p>
                         <br>
                         <p><button type="submit" class="btn btn-default">Upload</button>
                         </p>
