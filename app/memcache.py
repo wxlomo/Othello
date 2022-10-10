@@ -53,11 +53,13 @@ def invalidateKey(key):
 def refreshConfiguration():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
-    cnx = mysql.connector.connect(user='scott', password='password',
-                              host='127.0.0.1',
-                              database='employees')
+    cnx = mysql.connector.connect(
+                user='admin',
+                password='ece1779',
+                host='127.0.0.1',
+                database='estore')
     cursor = cnx.cursor()
-    query =  "SELECT `capacity`, `lru` FROM memcache_config;"
+    query =  "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
     cursor.execute(query)
     memcacheConfig.capacity = cursor[0]
     if cursor[1]:
@@ -118,13 +120,7 @@ def get():
 
 @webapp.route('/put',methods=['POST']) 
 def put():
-    """
-    image_string = ""
-    with open(address, "rb") as image:
-        image_string = base64.b64encode(image.read())
-    data = dict(key=key, value=image_string)
-    response = requests.post("http://localhost:5001/put", data=data)
-    """
+   
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
     
@@ -174,13 +170,13 @@ def put():
 def statistic():
     s=memcacheStatistics.getStat()
     
-    cnx = mysql.connector.connect(user='scott', password='password',
-                              host='127.0.0.1',
-                              database='employees')
+    cnx = mysql.connector.connect(
+                user='admin',
+                password='ece1779',
+                host='127.0.0.1',
+                database='estore')
     cursor = cnx.cursor()
-    query =  ("INSERT INTO statistics "
-                "(`itemNum`, `totalSize`, `requestNum``missRate`, `hitRate`)" 
-                "VALUES ( {}, {}, {}, {}, {});")
+    query =  "INSERT INTO ece1779.memcache_stat (userid, itemNum, totalSize, requestNum, missRate, hitRate) VALUES (1, %s, %s, %s, %s, %s);"
     cursor.execute(query,s)
     
     cnx.commit()
