@@ -6,8 +6,14 @@ from app import getResult, webapp, memcache, memcacheStatistics,memcacheConfig
 from flask import json
 import datetime
 import mysql.connector
+import threading
+import time
 
-
+@webapp.before_first_request
+def updatestat():
+    while True:
+        time.sleep(5)
+        statistic()
 
 @webapp.route('/clear')
 def clearCache():
