@@ -95,6 +95,19 @@ def db_wrapper(query_type, arg1='', arg2=''):
         return None
 
 
+def is_image(file):
+    """Check if the file format is an image
+
+    Args:
+      file (file): the file object
+
+    Returns:
+      bool: true if the format of the file is an image
+    """
+    return '.' in file.filename and \
+           file.filename.rsplit('.', 1)[1].lower() in {'jpg', 'jpeg', 'tiff', 'gif', 'tif', 'bmp', 'webp', 'png'}
+
+
 @gallery.route('/')
 def get_home():
     """Home page render.
@@ -236,6 +249,8 @@ def put_image():
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    if not is_image(image):
+        return render_template('result.html', result='Please Upload An Image :(')
     image.save(path)
     data = dict(key=key, value=image)
     response = requests.post("http://localhost:5001/put", data=data)
@@ -296,7 +311,7 @@ def put_image_api():
     Returns:
       dict: the JSON format response of the HTTP request
     """
-    image = request.files['image']
+    image = request.files['file']
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
@@ -314,6 +329,14 @@ def put_image_api():
             'error': {
                 'code': 400,
                 'message': 'Bad Request: No valid image input.'
+            }
+        }
+    if not is_image(image):
+        return {
+            'success': 'false',
+            'error': {
+                'code': 400,
+                'message': 'Bad Request: The uploaded file is not an image.'
             }
         }
     image.save(path)
