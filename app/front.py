@@ -245,7 +245,7 @@ def put_image():
     Returns:
       str: the arguments for the Jinja template
     """
-    image = request.files['image']
+    image = base64.b64encode(request.files['image'].read()).decode('utf-8')
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
