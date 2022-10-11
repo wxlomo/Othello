@@ -19,7 +19,7 @@ def get_db():
 
 
 @gallery.teardown_appcontext
-def teardown_db(exception):
+def teardown_db():
     db = g.pop('db', None)
     if db is not None:
         db.close()
@@ -45,11 +45,11 @@ def put_image():
     image = request.files['image']
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
-    webapp.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     image.save(path)
     data = dict(key=key, value=image)
     response = requests.post("http://localhost:5001/put", data=data)
-    webapp.logger.debug(response)
+    gallery.logger.debug(response)
     query = '''INSERT INTO ece1779.memcache_keys (key, value) 
                VALUES (%s, %s);''', (key, path)
     db_wrapper(query)
@@ -58,7 +58,7 @@ def put_image():
 
 @gallery.route('/view')
 def get_all_image():
-    webapp.logger.debug('\n* Viewing all image')
+    gallery.logger.debug('\n* Viewing all image')
     query = '''SELECT "key" 
                FROM ece1779.memcache_keys;'''
     return render_template('view.html', cursor=db_wrapper(query))
@@ -67,10 +67,10 @@ def get_all_image():
 @gallery.route('/retrieve', methods=['POST'])
 def get_image():
     key = request.form['key']
-    webapp.logger.debug('\n* Retrieving an image by key: ' + str(key))
+    gallery.logger.debug('\n* Retrieving an image by key: ' + str(key))
     data = dict(key=key)
     response = requests.post("http://localhost:5001/get", data=data)
-    webapp.logger.debug(response)
+    gallery.logger.debug(response)
     if response == 'miss':
         query = '''SELECT value 
                    FROM ece1779.memcache_keys 
@@ -82,7 +82,7 @@ def get_image():
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
         data = dict(key=key, value=image)
         response = requests.post("http://localhost:5001/put", data=data)
-        webapp.logger.debug(response)
+        gallery.logger.debug(response)
     else:
         image = response
     return render_template('retrieve.html', image='data:image/png; base64, {0}'.format(image), key=key)
@@ -94,7 +94,7 @@ def get_config():
                FROM ece1779.memcache_config 
                WHERE userid = 1;'''
     capacity, policy = db_wrapper(query).fetchone()
-    webapp.logger.debug('\n* Viewing config with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    gallery.logger.debug('\n* Viewing config with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     if policy == 'lru':
         return render_template('config.html', policy='LRU', policyi='Random', capa=capacity)
     else:
@@ -106,29 +106,30 @@ def put_config():
     query = '''SELECT capacity,lru 
                FROM ece1779.memcache_config 
                WHERE userid = 1;'''
-    capacity = request.form['capacity']
     policy = db_wrapper(query).fetchone()[1]
     if policy == 'lru':
-        if request.form['policy']: policy = 'random'
+        if request.form['policy']:
+            policy = 'random'
     else:
-        if request.form['policy']: policy = 'lru'
+        if request.form['policy']:
+            policy = 'lru'
     capacity = request.form['capacity']
-    webapp.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    gallery.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     query = '''UPDATE ece1779.memcache_config 
                SET lru = %s, capacity = %s 
                WHERE userid = 1;''', (policy, capacity)
     db_wrapper(query)
     if request.form['clear']:
         response = requests.post("http://localhost:5001/clear")
-        webapp.logger.debug(response)
+        gallery.logger.debug(response)
     response = requests.post("http://localhost:5001/refreshConfiguration")
-    webapp.logger.debug(response)
+    gallery.logger.debug(response)
     return render_template('result.html', result='Your Configuration Has Been Processed :)')
 
 
 @gallery.route('/statistics')
 def get_statistics():
-    webapp.logger.debug('\n* Viewing statistics')
+    gallery.logger.debug('\n* Viewing statistics')
     query = '''SELECT itemNum, totalSize, requestNum, missRate, hitRate 
                FROM ece1779.memcache_stat 
                WHERE userid = 1;'''
@@ -137,5 +138,5 @@ def get_statistics():
 
 @gallery.route('/about')
 def get_about():
-    webapp.logger.debug('\n* Viewing about')
+    gallery.logger.debug('\n* Viewing about')
     return render_template('about.html')
