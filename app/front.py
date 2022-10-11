@@ -245,14 +245,15 @@ def put_image():
     Returns:
       str: the arguments for the Jinja template
     """
-    image = request.files['image']
+    image_file = request.files['image']
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
-    if not is_image(image):
+    if not is_image(image_file):
         return render_template('result.html', result='Please Upload An Image :(')
-    image.save(path)
-    data = dict(key=key, value=base64.b64encode(image.read()).decode('utf-8'))
+    image_file.save(path)
+    image = base64.b64encode(image_file.read()).decode('utf-8')
+    data = dict(key=key, value=image)
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response)
     cursor = db_wrapper('get_image')
@@ -311,7 +312,7 @@ def put_image_api():
     Returns:
       dict: the JSON format response of the HTTP request
     """
-    image = request.files['file']
+    image_file = request.files['file']
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
@@ -323,7 +324,7 @@ def put_image_api():
                 'message': 'Bad Request: No valid key input.'
             }
         }
-    if not image:
+    if not image_file:
         return {
             'success': 'false',
             'error': {
@@ -331,7 +332,7 @@ def put_image_api():
                 'message': 'Bad Request: No valid image input.'
             }
         }
-    if not is_image(image):
+    if not is_image(image_file):
         return {
             'success': 'false',
             'error': {
@@ -339,8 +340,9 @@ def put_image_api():
                 'message': 'Bad Request: The uploaded file is not an image.'
             }
         }
-    image.save(path)
-    data = dict(key=key, value=base64.b64encode(image.read()).decode('utf-8'))
+    image_file.save(path)
+    image = base64.b64encode(image_file.read()).decode('utf-8')
+    data = dict(key=key, value=image)
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response)
     cursor = db_wrapper('get_image')
