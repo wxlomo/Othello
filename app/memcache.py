@@ -68,7 +68,7 @@ def refreshConfiguration():
     query =  "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
     cursor.execute(query)
     memcacheConfig.capacity = cursor[0]
-    if cursor[1]:
+    if cursor[1]=='lru':
         memcacheConfig.policy = 'LRU'
     else:
         memcacheConfig.policy = 'Random'
