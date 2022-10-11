@@ -245,14 +245,14 @@ def put_image():
     Returns:
       str: the arguments for the Jinja template
     """
-    image = base64.b64encode(request.files['image'].read()).decode('utf-8')
+    image = request.files['image']
     key = request.form['key']
     path = os.path.join('app/static/img', secure_filename(key))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image):
         return render_template('result.html', result='Please Upload An Image :(')
     image.save(path)
-    data = dict(key=key, value=image)
+    data = dict(key=key, value=base64.b64encode(image.read()).decode('utf-8'))
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response)
     cursor = db_wrapper('get_image')
@@ -340,7 +340,7 @@ def put_image_api():
             }
         }
     image.save(path)
-    data = dict(key=key, value=image)
+    data = dict(key=key, value=base64.b64encode(image.read()).decode('utf-8'))
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response)
     cursor = db_wrapper('get_image')
