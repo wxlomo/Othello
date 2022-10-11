@@ -1,14 +1,14 @@
 <!--
- * fail.html
- * html code for the fail page of the gallery
+ * result.html
+ * html code for the success page of the gallery
  * Editor: Weixuan Yang
  * Date: October 04, 2022
 -->
 
 {% extends "layout.html" %}
-{% block title %}Fail{% endblock title %}
+{% block title %}Success{% endblock title %}
 {% block content %}
-<h1>Not found :(</h1>
+<h1>{{result}}</h1>
 <br>
 <a href="{{url_for('index')}}" class="btn btn-default">Return</a>
 {% endblock content %}

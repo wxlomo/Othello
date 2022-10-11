@@ -2,4 +2,4 @@ from flask import Flask
 
 global memcache
 
-webapp = Flask(__name__)
+gallery = Flask(__name__)
