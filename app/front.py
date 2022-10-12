@@ -349,7 +349,7 @@ def put_image_api():
             }
         }
     image_file.save(path)
-    data = data = {'key': key}
+    data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response.text)
     if response.json() == 'Unknown key':
