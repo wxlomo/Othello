@@ -1,15 +1,116 @@
 import random
 import sys
 from collections import OrderedDict
-from flask import render_template, url_for, request
-from app import getResult, webapp, memcache, memcacheStatistics,memcacheConfig
+from flask import request
+from app import webapp 
 from flask import json
 import datetime
 import mysql.connector
 import threading
 import time
 
+global cache
+global memcacheStatistics
+global memcacheConfig
+
+
+
+cache=OrderedDict()
+memcacheConfig = {'capacity': 4,  
+                  'policy': 'LRU'} # default setting, get real time config from db
+
+
+class getResult:
+    #store time and result (hit/miss) of a cache action
+    def __init__(self, time, result):
+        self.timestamp = time
+        self.result = result
+    
+class cachestat:
+    
+    def __init__(self):
+        self.getList = [] #store cache action results
+        self.numberItems=0 #track number of items in cache
+        self.currentSize = 0 #track current cache size
+        self.requestList = [] #store all requests time
+       
+    def get_size(self):
+        return self.currentSize
+     
+    def clear(self):
+        self.currentSize = 0
+        self.numberItems=0
+        
+    def addGetResult(self, result:getResult):
+        """Add get() time and result to list
+           argument is getResult(time of get, hit/miss)
+        """
+        self.getList.append(result)  
+        
+    def addRequestTime(self, t):
+        """Add time of the request in requestList 
+        argument is time of the request
+        """
+        self.requestList.append(t) 
+        
+    def addItem(self,size):
+        self.currentSize+=size
+        self.numberItems+=1
+    
+    def removeItem(self,size):
+        self.currentSize-=size
+        self.numberItems-=1
+        
+    def getStat(self):
+        #get current statistics for the mem-cache over the past 10 minutes.
+
+        total=0
+        hit=0
+        miss=0
+        hitRate=0
+        missRate=0
+        currentTime = datetime.datetime.now()
+        startTime = currentTime - datetime.timedelta(minutes=10)
+        newGetList = []
+        for act in self.getList:
+            if startTime <= act.timestamp:
+                newGetList.append(act)
+                if act.result == "miss":
+                    miss = miss+1
+                    total = total + 1
+                if act.result == "hit":
+                    hit = hit+1
+                    total = total + 1
+        if(total!=0):
+            hitRate = hit/total
+            missRate = miss/total
+        self.getList=newGetList
+        
+        
+        numberRequests=0
+        newRequestList=[]
+        for t in self.requestList:
+            if startTime <= t:
+                numberRequests+=1
+                newRequestList.append(t)
+        self.requestList=newRequestList
+        
+        return [self.numberItems,self.currentSize,numberRequests, missRate ,hitRate]
+memcacheStatistics = cachestat()
+
+
+
+
+
+@webapp.route('/')
+def page():
+    return "Hello, World!"
+    
 @webapp.before_first_request
+def threadedUpdate():
+    thread = threading.Thread(target=updatestat)
+    thread.start()
+    
 def updatestat():
     while True:
         time.sleep(5)
@@ -20,7 +121,7 @@ def clearCache():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
     
-    memcache.clear()
+    cache.clear()
     memcacheStatistics.clear()
     response = webapp.response_class(
         response=json.dumps("OK"),
@@ -33,11 +134,11 @@ def clearCache():
 def invalidateKey(key):
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
-    if key in memcache:
-        value = memcache[key]
+    if key in cache:
+        value = cache[key]
         size=sys.getsizeof(value)
         memcacheStatistics.removeItem(size)
-        del memcache[key]
+        del cache[key]
         response = webapp.response_class(
             response=json.dumps("OK"),
             status=200,
@@ -63,7 +164,7 @@ def refreshConfiguration():
                 user='admin',
                 password='ece1779',
                 host='127.0.0.1',
-                database='estore')
+                database='ece1779')
     cursor = cnx.cursor()
     query =  "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
     cursor.execute(query)
@@ -77,15 +178,15 @@ def refreshConfiguration():
     cnx.close()
     while (memcacheStatistics.get_size() > memcacheConfig.capacity*1024*1024):
         if memcacheConfig['policy'] == 'LRU':
-            delvalue=memcache.popitem(False)[1]
+            delvalue=cache.popitem(False)[1]
             size=sys.getsizeof(delvalue)
             memcacheStatistics.removeItem(size)
         else:
-            delkey=random.choice(list(memcache.keys()))
-            delvalue = memcache[delkey]
+            delkey=random.choice(list(cache.keys()))
+            delvalue = cache[delkey]
             size=sys.getsizeof(delvalue)
             memcacheStatistics.removeItem(size)
-            del memcache[delkey]
+            del cache[delkey]
     response = webapp.response_class(
         response=json.dumps("OK"),
         status=200,
@@ -100,13 +201,13 @@ def get():
     memcacheStatistics.addRequestTime(t)
     
     key = request.form.get('key')
-    if key in memcache:
-        value = memcache[key]
+    if key in cache:
+        value = cache[key]
         r=getResult(t, 'hit')
         memcacheStatistics.addGetResult(r)
         
         if memcacheConfig['policy'] == 'LRU':
-            memcache.move_to_end(key) 
+            cache.move_to_end(key) 
             
         response = webapp.response_class(
             response=json.dumps(value),
@@ -133,11 +234,11 @@ def put():
     key = request.form.get('key')
     value = request.form.get('value')
     image_size = sys.getsizeof(value)
-    if key in memcache:
-        delvalue = memcache[key]
+    if key in cache:
+        delvalue = cache[key]
         size=sys.getsizeof(delvalue)
         memcacheStatistics.removeItem(size)
-        del memcache[key]
+        del cache[key]
     if image_size > memcacheConfig.capacity*1024*1024:
         response = webapp.response_class(
         response=json.dumps("Image too big to cache"),
@@ -148,20 +249,20 @@ def put():
     
     while (image_size + memcacheStatistics.get_size() > memcacheConfig.capacity*1024*1024):
         if memcacheConfig['policy'] == 'LRU':
-            delvalue=memcache.popitem(False)[1]
+            delvalue=cache.popitem(False)[1]
             size=sys.getsizeof(delvalue)
             memcacheStatistics.removeItem(size)
         else:
-            delkey=random.choice(list(memcache.keys()))
-            delvalue = memcache[key]
+            delkey=random.choice(list(cache.keys()))
+            delvalue = cache[key]
             size=sys.getsizeof(delvalue)
             memcacheStatistics.removeItem(size)
-            del memcache[delkey]
+            del cache[delkey]
             
-    memcache[key] = value
+    cache[key] = value
     memcacheStatistics.addItem(image_size)
     if memcacheConfig['policy'] == 'LRU':
-        memcache.move_to_end(key) 
+        cache.move_to_end(key) 
         
     response = webapp.response_class(
         response=json.dumps("OK"),
@@ -180,7 +281,7 @@ def statistic():
                 user='admin',
                 password='ece1779',
                 host='127.0.0.1',
-                database='estore')
+                database='ece1779')
     cursor = cnx.cursor()
     query =  "INSERT INTO ece1779.memcache_stat (userid, itemNum, totalSize, requestNum, missRate, hitRate) VALUES (1, %s, %s, %s, %s, %s);"
     cursor.execute(query,s)
