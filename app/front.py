@@ -252,20 +252,28 @@ def put_image():
     if not is_image(image_file):
         return render_template('result.html', result='Please Upload An Image :(')
     image_file.save(path)
+    data = dict(key=key)
+    response = requests.post("http://localhost:5001/get", data=data)
+    gallery.logger.debug(response)
+    if response == 'miss':
+        cursor = db_wrapper('get_image')
+        if not cursor:
+            return render_template('result.html', result='Something Wrong :(')
+        path = cursor.fetchone()[1]
+        if not path:
+            cursor = db_wrapper('put_image', key, path)
+        else:
+            cursor = db_wrapper('put_image_exist', key, path)
+    else:
+        response = requests.post("http://localhost:5001/invalidateKey/%s".format(key))
+        gallery.logger.debug(response)
+        cursor = db_wrapper('put_image_exist', key, path)
+    if not cursor:
+        return render_template('result.html', result='Something Wrong :(')
     image = base64.b64encode(image_file.read()).decode('utf-8')
     data = dict(key=key, value=image)
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response)
-    cursor = db_wrapper('get_image')
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    path = cursor.fetchone()[1]
-    if not path:
-        cursor = db_wrapper('put_image', key, path)
-    else:
-        cursor = db_wrapper('put_image_exist', key, path)
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
 
 
@@ -341,23 +349,27 @@ def put_image_api():
             }
         }
     image_file.save(path)
-    image = base64.b64encode(image_file.read()).decode('utf-8')
-    data = dict(key=key, value=image)
-    response = requests.post("http://localhost:5001/put", data=data)
+    data = dict(key=key)
+    response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response)
-    cursor = db_wrapper('get_image')
-    if not cursor:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to database'
+    if response == 'miss':
+        cursor = db_wrapper('get_image')
+        if not cursor:
+            return {
+                'success': 'false',
+                'error': {
+                    'code': 500,
+                    'message': 'Internal Server Error: Fail in connecting to database'
+                }
             }
-        }
-    path = cursor.fetchone()[1]
-    if not path:
-        cursor = db_wrapper('put_image', key, path)
+        path = cursor.fetchone()[1]
+        if not path:
+            cursor = db_wrapper('put_image', key, path)
+        else:
+            cursor = db_wrapper('put_image_exist', key, path)
     else:
+        response = requests.post("http://localhost:5001/invalidateKey/%s".format(key))
+        gallery.logger.debug(response)
         cursor = db_wrapper('put_image_exist', key, path)
     if not cursor:
         return {
@@ -367,6 +379,10 @@ def put_image_api():
                 'message': 'Internal Server Error: Fail in connecting to database'
             }
         }
+    image = base64.b64encode(image_file.read()).decode('utf-8')
+    data = dict(key=key, value=image)
+    response = requests.post("http://localhost:5001/put", data=data)
+    gallery.logger.debug(response)
     return {
         'success': 'true',
     }
