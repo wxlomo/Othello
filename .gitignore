@@ -1,2 +1,3 @@
-/.vscode
-.idea
+# Ignore VisualStudioCode settings and Pycharm files
+.vscode/*
+.idea/*
