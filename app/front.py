@@ -440,7 +440,7 @@ def get_image_api(key_value):
     data = {'key': key_value}
     response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response.text)
-    if response.json == 'Unknown key':
+    if response.json() == 'Unknown key':
         cursor = db_wrapper('get_image')
         if not cursor:
             return {
