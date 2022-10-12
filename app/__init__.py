@@ -1,12 +1,11 @@
 """
  * __init__.py
- * Front-end constructor
+ * Front-end instance constructor
  *
- * Author: Weixuan Yang, Haotian Chen, Haozhe Sun
+ * Author: Weixuan Yang
  * Date: Oct. 11, 2022
 """
 from flask import Flask
-
-global memcache
+from app import front
 
 gallery = Flask(__name__)

@@ -2,7 +2,7 @@
  * front.py
  * front-end interface and router of the gallery web application
  *
- * Author: Weixuan Yang, Haotian Chen, Haozhe Sun
+ * Author: Weixuan Yang
  * Date: Oct. 11, 2022
 """
 
@@ -35,7 +35,7 @@ def get_db():
 
 
 @gallery.teardown_appcontext
-def teardown_db():
+def teardown_db(exception):
     """Close the connection to the database after query executed.
 
     Args:
