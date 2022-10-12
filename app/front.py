@@ -163,10 +163,10 @@ def get_image():
     """
     key = request.form['key']
     gallery.logger.debug('\n* Retrieving an image by key: ' + str(key))
-    data = dict(key=key)
+    data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response)
-    if response == 'miss':
+    gallery.logger.debug(response.text)
+    if response.json() == 'Unknown key':
         cursor = db_wrapper('get_image')
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
@@ -175,11 +175,11 @@ def get_image():
             return render_template('result.html', result='Your Key Is Invalid :(')
         else:
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
-        data = dict(key=key, value=image)
+        data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
-        gallery.logger.debug(response)
+        gallery.logger.debug(response.text)
     else:
-        image = response
+        image = response.json()
     return render_template('retrieve.html', image='data:image/png; base64, {0}'.format(image), key=escape(key))
 
 
@@ -252,10 +252,10 @@ def put_image():
     if not is_image(image_file):
         return render_template('result.html', result='Please Upload An Image :(')
     image_file.save(path)
-    data = dict(key=key)
+    data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response)
-    if response == 'miss':
+    gallery.logger.debug(response.text)
+    if response.json() == 'Unknown key':
         cursor = db_wrapper('get_image')
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
@@ -266,14 +266,14 @@ def put_image():
             cursor = db_wrapper('put_image_exist', key, path)
     else:
         response = requests.post("http://localhost:5001/invalidateKey/%s".format(key))
-        gallery.logger.debug(response)
+        gallery.logger.debug(response.text)
         cursor = db_wrapper('put_image_exist', key, path)
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     image = base64.b64encode(image_file.read()).decode('utf-8')
-    data = dict(key=key, value=image)
+    data = {'key': key, 'value': image}
     response = requests.post("http://localhost:5001/put", data=data)
-    gallery.logger.debug(response)
+    gallery.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
 
 
@@ -304,9 +304,9 @@ def put_config():
         return render_template('result.html', result='Something Wrong :(')
     if request.form['clear']:
         response = requests.post("http://localhost:5001/clear")
-        gallery.logger.debug(response)
+        gallery.logger.debug(response.text)
     response = requests.post("http://localhost:5001/refreshConfiguration")
-    gallery.logger.debug(response)
+    gallery.logger.debug(response.text)
     return render_template('result.html', result='Your Configuration Has Been Processed :)')
 
 
@@ -349,10 +349,10 @@ def put_image_api():
             }
         }
     image_file.save(path)
-    data = dict(key=key)
+    data = data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response)
-    if response == 'miss':
+    gallery.logger.debug(response.text)
+    if response.json() == 'Unknown key':
         cursor = db_wrapper('get_image')
         if not cursor:
             return {
@@ -369,7 +369,7 @@ def put_image_api():
             cursor = db_wrapper('put_image_exist', key, path)
     else:
         response = requests.post("http://localhost:5001/invalidateKey/%s".format(key))
-        gallery.logger.debug(response)
+        gallery.logger.debug(response.text)
         cursor = db_wrapper('put_image_exist', key, path)
     if not cursor:
         return {
@@ -380,9 +380,9 @@ def put_image_api():
             }
         }
     image = base64.b64encode(image_file.read()).decode('utf-8')
-    data = dict(key=key, value=image)
+    data = {'key': key, 'value': image}
     response = requests.post("http://localhost:5001/put", data=data)
-    gallery.logger.debug(response)
+    gallery.logger.debug(response.text)
     return {
         'success': 'true',
     }
@@ -437,10 +437,10 @@ def get_image_api(key_value):
       dict: the JSON format response of the HTTP request
     """
     gallery.logger.debug('\n* Retrieving an image by key: ' + str(key_value))
-    data = dict(key=key_value)
+    data = {'key': key_value}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response)
-    if response == 'miss':
+    gallery.logger.debug(response.text)
+    if response.json == 'Unknown key':
         cursor = db_wrapper('get_image')
         if not cursor:
             return {
@@ -461,11 +461,11 @@ def get_image_api(key_value):
             }
         else:
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
-        data = dict(key=key_value, value=image)
+        data = {'key': key_value, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
-        gallery.logger.debug(response)
+        gallery.logger.debug(response.text)
     else:
-        image = response
+        image = response.json()
     return {
         'success': 'true',
         'content': image
