@@ -347,7 +347,13 @@ def put_image_api():
     gallery.logger.debug(response)
     cursor = db_wrapper('get_image')
     if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
+        return {
+            'success': 'false',
+            'error': {
+                'code': 500,
+                'message': 'Internal Server Error: Fail in connecting to database'
+            }
+        }
     path = cursor.fetchone()[1]
     if not path:
         cursor = db_wrapper('put_image', key, path)
