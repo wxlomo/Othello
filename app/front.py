@@ -76,10 +76,10 @@ def db_wrapper(query_type, arg1='', arg2=''):
         return None
     try:
         cursor = db.cursor().execute(query[query_type])
-        gallery.logger.debug('\n* Executing query: ' + str(query_type))
+        gallery.logger.debug('\n* Executing query: ' + str(query[query_type]))
         return cursor
     except mysql.connector.Error as err:
-        gallery.logger.error('\n* Error in executing query: ' + str(err))
+        gallery.logger.error('\n* Error in executing query: ' + str(query[query_type]))
         return None
 
 
