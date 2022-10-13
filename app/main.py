@@ -95,7 +95,7 @@ class cachestat:
                 newRequestList.append(t)
         self.requestList=newRequestList
         
-        return [self.numberItems,self.currentSize,numberRequests, missRate ,hitRate]
+        return [self.numberItems,self.currentSize/1024/1024,numberRequests, missRate ,hitRate]
 memcacheStatistics = cachestat()
 
 
@@ -104,7 +104,7 @@ memcacheStatistics = cachestat()
 
 @webapp.route('/')
 def page():
-    return "Hello, World!"
+    return "Started successfully"
     
 @webapp.before_first_request
 def threadedUpdate():
@@ -161,22 +161,27 @@ def refreshConfiguration():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
     cnx = mysql.connector.connect(
-                user='admin',
-                password='ece1779',
+                user='root',
+                password='199909012',
                 host='127.0.0.1',
                 database='ece1779')
+    
     cursor = cnx.cursor()
-    query =  "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
+    query =  "SELECT capacity, lru FROM ece1779.memcache_config WHERE userid = 1;"
     cursor.execute(query)
-    memcacheConfig.capacity = cursor[0]
-    if cursor[1]=='lru':
-        memcacheConfig.policy = 'LRU'
+    capacity, policy = cursor.fetchone()
+    
+    memcacheConfig['capacity'] = int(capacity)
+    if str(policy)=='lru':
+        memcacheConfig[policy] = 'LRU'
     else:
-        memcacheConfig.policy = 'Random'
+        memcacheConfig[policy] = 'Random'
+    
+    
     
     cursor.close()
     cnx.close()
-    while (memcacheStatistics.get_size() > memcacheConfig.capacity*1024*1024):
+    while (memcacheStatistics.get_size() > memcacheConfig['capacity']*1024*1024):
         if memcacheConfig['policy'] == 'LRU':
             delvalue=cache.popitem(False)[1]
             size=sys.getsizeof(delvalue)
@@ -239,7 +244,7 @@ def put():
         size=sys.getsizeof(delvalue)
         memcacheStatistics.removeItem(size)
         del cache[key]
-    if image_size > memcacheConfig.capacity*1024*1024:
+    if image_size > memcacheConfig['capacity']*1024*1024:
         response = webapp.response_class(
         response=json.dumps("Image too big to cache"),
         status=200,
@@ -247,7 +252,7 @@ def put():
         )
         return response
     
-    while (image_size + memcacheStatistics.get_size() > memcacheConfig.capacity*1024*1024):
+    while (image_size + memcacheStatistics.get_size() > memcacheConfig['capacity']*1024*1024):
         if memcacheConfig['policy'] == 'LRU':
             delvalue=cache.popitem(False)[1]
             size=sys.getsizeof(delvalue)
@@ -278,12 +283,12 @@ def statistic():
     s=memcacheStatistics.getStat()
     
     cnx = mysql.connector.connect(
-                user='admin',
-                password='ece1779',
+                user='root',
+                password='199909012',
                 host='127.0.0.1',
                 database='ece1779')
     cursor = cnx.cursor()
-    query =  "INSERT INTO ece1779.memcache_stat (userid, itemNum, totalSize, requestNum, missRate, hitRate) VALUES (1, %s, %s, %s, %s, %s);"
+    query =  "UPDATE ece1779.memcache_stat SET itemNum = %s, totalSize = %s, requestNum = %s, missRate = %s, hitRate = %s WHERE userid = 1;"
     cursor.execute(query,s)
     
     cnx.commit()
