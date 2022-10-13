@@ -1,0 +1,1 @@
+cd Frontend && flask run --port=5000 & cd Memcache && flask run --port=5001
