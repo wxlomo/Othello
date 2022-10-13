@@ -229,8 +229,12 @@ def put_image():
     """
     image_file = request.files['image']
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(image_file.filename))
+    if len(key)>45:
+        return render_template('result.html', result='Key is too long, please input key less than 45 characters.')
+    path = os.path.join('app/static/img', secure_filename(key+image_file.filename))
     path = path.replace('\\', '/')
+    if len(path)>100:
+        return render_template('result.html', result='Key and filename are too long, keep sum of key and filename length under 80 characters.')
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image_file):
         return render_template('result.html', result='Please Upload An Image :(')
@@ -330,8 +334,28 @@ def put_image_api():
     """
     image_file = request.files['file']
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(image_file.filename))
+    
+            
+    path = os.path.join('app/static/img', secure_filename(key+image_file.filename))
+    
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    if len(key)>45:
+        return {
+            'success': 'false',
+            'error': {
+                'code': 400,
+                'message': 'Bad Request: Key is too long, please input key less than 45 characters.'
+            }
+        }
+    elif len(path)>100:
+        return {
+            'success': 'false',
+            'error': {
+                'code': 400,
+                'message': 'Bad Request: Key and filename are too long, keep sum of key and filename length under 80 characters.'
+            }
+        }
+         
     if not key:
         return {
             'success': 'false',
