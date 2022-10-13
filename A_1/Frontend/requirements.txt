@@ -1,0 +1,4 @@
+mysql~=0.0.3
+flask~=1.1.2
+requests~=2.26.0
+werkzeug~=2.0.1

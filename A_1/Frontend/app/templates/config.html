@@ -1,0 +1,30 @@
+<!--
+ * config.html
+ * html code for the configuration page of the gallery
+ * Editor: Weixuan Yang
+ * Date: October 04, 2022
+-->
+
+{% extends "layout.html" %}
+{% block title %}Configuration{% endblock title %}
+{% block config %}active{% endblock config %}
+{% block content %}
+<h1>Memcache Configuration</h1>
+<br>
+<form method="post" enctype="multipart/form-data" action="/putConfig">
+    
+    <p class="lead"><label for="Policy">Choose a policy:</label>
+    <select id="policy" name="policy" style="width: 120px; color:black" >
+        <option value="lru">lru</option>
+        <option value="random">random</option>
+    </select>
+    <p class="lead"><label for="capacity">Current cache capacity is {{capa}} MB. Set to: <input type="number" style="width: 120px; color:black" name="capacity" value="{{capa}}" required> MB</p>
+    <p class="lead"><label for="clear">Clear the cache:</label>
+    <select id="clear" name="clear" style="width: 120px; color:black" >
+        <option value="yes">yes</option>
+        <option value="no">no</option>
+    </select>
+    
+    <p class="lead"><button type="submit" class="btn btn-default">Confirm</button>
+</form>
+{% endblock content %}
