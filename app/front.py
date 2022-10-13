@@ -13,7 +13,7 @@ import mysql.connector
 import os
 import requests
 import base64
-
+from PIL import Image
 
 def get_db():
     """Establish the connection to the database.
@@ -24,12 +24,13 @@ def get_db():
     Returns:
       MySQLConnection: the connector to the available database.
     """
+    
     if 'db' not in g:
         g.db = mysql.connector.connect(
-            user='admin',
-            password='ece1779',
+            user='root',
+            password='199909012',
             host='127.0.0.1',
-            database='estore'
+            database='ece1779'
         )
     return g.db
 
@@ -48,39 +49,6 @@ def teardown_db(exception):
     if db is not None:
         db.close()
 
-
-def db_wrapper(query_type, arg1='', arg2=''):
-    """Connect to the database and try executing queries in the dict.
-
-    Args:
-      query_type (str): the type of the query
-      arg1 (str, optional): the first argument in the query
-      arg2 (str, optional): the second argument in the query
-
-    Returns:
-      MySQLCursor: the cursor contains the requested data, None if query
-        type is not in the dict or the execution failed.
-    """
-    query = {
-        'get_key': '''SELECT "key" FROM ece1779.memcache_keys;''',
-        'get_image': '''SELECT value FROM ece1779.memcache_keys WHERE "key" = %s;'''.format(arg1),
-        'get_config': '''SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;''',
-        'get_statistics': '''SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM ece1779.memcache_stat WHERE userid = 1;''',
-        'put_image': '''INSERT INTO ece1779.memcache_keys (key, value) VALUES (%s, %s);'''.format(arg1, arg2),
-        'put_image_exist': '''UPDATE ece1779.memcache_keys SET value = %sm WHERE "key" = %s;'''.format(arg1, arg2),
-        'put_config': '''UPDATE ece1779.memcache_config SET lru = %s, capacity = %s WHERE userid = 1;'''.format(arg1, arg2)
-    }
-    db = get_db()
-    if query_type not in query:
-        gallery.logger.error('\n* Wrong query type: ' + str(query_type))
-        return None
-    try:
-        cursor = db.cursor().execute(query[query_type])
-        gallery.logger.debug('\n* Executing query: ' + str(query[query_type]))
-        return cursor
-    except mysql.connector.Error as err:
-        gallery.logger.error('\n* Error in executing query: ' + str(query[query_type]))
-        return None
 
 
 def is_image(file):
@@ -128,12 +96,17 @@ def get_key():
 
     Args:
       n/a
-
+    cursor = db_wrapper('get_key')
     Returns:
       str: the arguments for the Jinja template
     """
     gallery.logger.debug('\n* Viewing all image')
-    cursor = db_wrapper('get_key')
+    
+    db = get_db()
+    cursor=db.cursor()
+    query = "SELECT id FROM ece1779.memcache_keys;"
+    cursor.execute(query)
+    
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     return render_template('view.html', cursor=cursor)
@@ -148,6 +121,7 @@ def get_image():
 
     Returns:
       str: the arguments for the Jinja template
+      
     """
     key = request.form['key']
     gallery.logger.debug('\n* Retrieving an image by key: ' + str(key))
@@ -155,13 +129,19 @@ def get_image():
     response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        cursor = db_wrapper('get_image')
+        db = get_db()
+        cursor=db.cursor()
+        
+        query = "SELECT value FROM ece1779.memcache_keys WHERE id = %s"
+        cursor.execute(query,(key,))
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
-        path = cursor.fetchone()[1]
+        path = cursor.fetchall()[0][0]
+        print(path)
         if not path:
             return render_template('result.html', result='Your Key Is Invalid :(')
         else:
+        
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
@@ -180,8 +160,17 @@ def get_config():
 
     Returns:
       str: the arguments for the Jinja template
+      db = get_db()
+    cursor=db.cursor()
+    query = "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
+    cursor.execute(query)
+      cursor = db_wrapper('get_config')
     """
-    cursor = db_wrapper('get_config')
+    db = get_db()
+    cursor=db.cursor()
+    query = "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
+    cursor.execute(query)
+    
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     capacity, policy = cursor.fetchone()
@@ -203,9 +192,14 @@ def get_statistics():
       str: the arguments for the Jinja template
     """
     gallery.logger.debug('\n* Viewing statistics')
-    cursor = db_wrapper('get_statistics')
+    db = get_db()
+    cursor=db.cursor()
+    query = "SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM ece1779.memcache_stat WHERE userid = 1;"
+    cursor.execute(query)
     if not cursor:
+        
         return render_template('result.html', result='Something Wrong :(')
+    
     return render_template('statistics.html', cursor=cursor)
 
 
@@ -235,7 +229,8 @@ def put_image():
     """
     image_file = request.files['image']
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(key))
+    path = os.path.join('app/static/img', secure_filename(image_file.filename))
+    path = path.replace('\\', '/')
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image_file):
         return render_template('result.html', result='Please Upload An Image :(')
@@ -244,22 +239,50 @@ def put_image():
     response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        cursor = db_wrapper('get_image')
+       
+        db = get_db()
+        cursor=db.cursor()
+        query = "SELECT id FROM ece1779.memcache_keys;"
+        cursor.execute(query)
         if not cursor:
+            
             return render_template('result.html', result='Something Wrong :(')
-        path = cursor.fetchone()[1]
-        if not path:
-            cursor = db_wrapper('put_image', key, path)
+    
+        existed=False
+        for row in cursor:
+            if key in row:
+                existed=True
+        if not existed:  
+
+            db = get_db()
+            cursor=db.cursor()
+            query = "INSERT INTO ece1779.memcache_keys  (`id`, `value`) VALUES (%s, %s);"
+            cursor.execute(query, (key,path,))
+            db.commit()
+            
         else:
-            cursor = db_wrapper('put_image_exist', key, path)
+            
+            db = get_db()
+            cursor=db.cursor()
+            query = "UPDATE ece1779.memcache_keys SET 'value' = %s WHERE 'id' = %s;"
+            cursor.execute(query,(path, key,))
+            db.commit()
+           
+            
     else:
-        response = requests.post("http://localhost:5001/invalidateKey/%s".format(key))
+        response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
         gallery.logger.debug(response.text)
-        cursor = db_wrapper('put_image_exist', key, path)
+        db = get_db()
+        cursor=db.cursor()
+        query = "UPDATE ece1779.memcache_keys SET value = %s WHERE id = %s;"
+        cursor.execute(query,(path, key,))
+        db.commit()
+        
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
-    image = base64.b64encode(image_file.read()).decode('utf-8')
+    image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
     data = {'key': key, 'value': image}
+    
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
@@ -275,25 +298,22 @@ def put_config():
     Returns:
       str: the arguments for the Jinja template
     """
-    cursor = db_wrapper('get_config')
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    policy = cursor.fetchone()[1]
-    if policy == 'lru':
-        if request.form['policy']:
-            policy = 'random'
-    else:
-        if request.form['policy']:
-            policy = 'lru'
+    
+    policy = request.form['policy']
     capacity = request.form['capacity']
+
     gallery.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    cursor = db_wrapper('put_config', policy, capacity)
+    db = get_db()
+    cursor=db.cursor()
+    query = "UPDATE ece1779.memcache_config SET lru = %s, capacity = %s WHERE userid = 1;"
+    cursor.execute(query,(policy, capacity))
+    db.commit()
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
-    if request.form['clear']:
-        response = requests.post("http://localhost:5001/clear")
+    if request.form['clear']=="yes":
+        response = requests.get("http://localhost:5001/clear")
         gallery.logger.debug(response.text)
-    response = requests.post("http://localhost:5001/refreshConfiguration")
+    response = requests.get("http://localhost:5001/refreshConfiguration")
     gallery.logger.debug(response.text)
     return render_template('result.html', result='Your Configuration Has Been Processed :)')
 
@@ -310,7 +330,7 @@ def put_image_api():
     """
     image_file = request.files['file']
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(key))
+    path = os.path.join('app/static/img', secure_filename(image_file.filename))
     gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not key:
         return {
@@ -341,8 +361,14 @@ def put_image_api():
     response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        cursor = db_wrapper('get_image')
+        
+        
+        db = get_db()
+        cursor=db.cursor()
+        query = "SELECT id FROM ece1779.memcache_keys;"
+        cursor.execute(query)
         if not cursor:
+            
             return {
                 'success': 'false',
                 'error': {
@@ -350,15 +376,33 @@ def put_image_api():
                     'message': 'Internal Server Error: Fail in connecting to database'
                 }
             }
-        path = cursor.fetchone()[1]
-        if not path:
-            cursor = db_wrapper('put_image', key, path)
+    
+        existed=False
+        for row in cursor:
+            if key in row:
+                existed=True
+        if not existed:  
+            db = get_db()
+            cursor=db.cursor()
+            query = "INSERT INTO ece1779.memcache_keys  (`id`, `value`) VALUES (%s, %s);"
+            cursor.execute(query, (key,path,))
+            db.commit()
+            
         else:
-            cursor = db_wrapper('put_image_exist', key, path)
+            
+            db = get_db()
+            cursor=db.cursor()
+            query = "UPDATE ece1779.memcache_keys SET 'value' = %s WHERE 'id' = %s;"
+            cursor.execute(query,(path, key,))
+            db.commit()
     else:
-        response = requests.post("http://localhost:5001/invalidateKey/%s".format(key))
+        response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
         gallery.logger.debug(response.text)
-        cursor = db_wrapper('put_image_exist', key, path)
+        db = get_db()
+        cursor=db.cursor()
+        query = "UPDATE ece1779.memcache_keys SET value = %s WHERE id = %s;"
+        cursor.execute(query,(path, key,))
+        db.commit()
     if not cursor:
         return {
             'success': 'false',
@@ -367,7 +411,7 @@ def put_image_api():
                 'message': 'Internal Server Error: Fail in connecting to database'
             }
         }
-    image = base64.b64encode(image_file.read()).decode('utf-8')
+    image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
     data = {'key': key, 'value': image}
     response = requests.post("http://localhost:5001/put", data=data)
     gallery.logger.debug(response.text)
@@ -388,7 +432,10 @@ def get_key_api():
     """
     gallery.logger.debug('\n* Viewing all image')
     keys = []
-    cursor = db_wrapper('get_key')
+    db = get_db()
+    cursor=db.cursor()
+    query = "SELECT id FROM ece1779.memcache_keys;"
+    cursor.execute(query)
     if not cursor:
         return {
             'success': 'false',
@@ -423,13 +470,20 @@ def get_image_api(key_value):
 
     Returns:
       dict: the JSON format response of the HTTP request
+      
     """
-    gallery.logger.debug('\n* Retrieving an image by key: ' + str(key_value))
-    data = {'key': key_value}
+    
+    key = key_value
+    gallery.logger.debug('\n* Retrieving an image by key: ' + str(key))
+    data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
     gallery.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        cursor = db_wrapper('get_image')
+        db = get_db()
+        cursor=db.cursor()
+        
+        query = "SELECT value FROM ece1779.memcache_keys WHERE id = %s"
+        cursor.execute(query,(key,))
         if not cursor:
             return {
                 'success': 'false',
@@ -438,7 +492,8 @@ def get_image_api(key_value):
                     'message': 'Internal Server Error: Fail in connecting to database'
                 }
             }
-        path = cursor.fetchone()[1]
+        path = cursor.fetchall()[0][0]
+        print(path)
         if not path:
             return {
                 'success': 'false',
@@ -448,8 +503,9 @@ def get_image_api(key_value):
                 }
             }
         else:
+        
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
-        data = {'key': key_value, 'value': image}
+        data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
         gallery.logger.debug(response.text)
     else:
@@ -458,3 +514,5 @@ def get_image_api(key_value):
         'success': 'true',
         'content': image
     }
+    
+    
