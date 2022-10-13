@@ -62,24 +62,35 @@ def db_wrapper(query_type, arg1='', arg2=''):
         type is not in the dict or the execution failed.
     """
     query = {
-        'get_key': '''SELECT "key" FROM ece1779.memcache_keys;''',
-        'get_image': '''SELECT value FROM ece1779.memcache_keys WHERE "key" = %s;'''.format(arg1),
-        'get_config': '''SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;''',
-        'get_statistics': '''SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM ece1779.memcache_stat WHERE userid = 1;''',
-        'put_image': '''INSERT INTO ece1779.memcache_keys (key, value) VALUES (%s, %s);'''.format(arg1, arg2),
-        'put_image_exist': '''UPDATE ece1779.memcache_keys SET value = %sm WHERE "key" = %s;'''.format(arg1, arg2),
-        'put_config': '''UPDATE ece1779.memcache_config SET lru = %s, capacity = %s WHERE userid = 1;'''.format(arg1, arg2)
+        'get_key': '''SELECT "key" 
+                      FROM ece1779.memcache_keys;''',
+        'get_image': '''SELECT value 
+                        FROM ece1779.memcache_keys 
+                        WHERE "key" = %s;'''.format(arg1),
+        'get_config': '''SELECT capacity,lru 
+                         FROM ece1779.memcache_config 
+                         WHERE userid = 1;''',
+        'get_statistics': '''SELECT itemNum, totalSize, requestNum, missRate, hitRate 
+                             FROM ece1779.memcache_stat 
+                             WHERE userid = 1;''',
+        'put_image': '''INSERT INTO ece1779.memcache_keys (key, value) 
+                        VALUES (%s, %s);'''.format(arg1, arg2),
+        'put_image_exist': '''UPDATE ece1779.memcache_keys 
+                              SET value = %s
+                              WHERE "key" = %s;'''.format(arg1, arg2),
+        'put_config': '''UPDATE ece1779.memcache_config 
+                         SET lru = %s, capacity = %s 
+                         WHERE userid = 1;'''.format(arg1, arg2)
     }
     db = get_db()
     if query_type not in query:
         gallery.logger.error('\n* Wrong query type: ' + str(query_type))
         return None
     try:
-        cursor = db.cursor().execute(query[query_type])
         gallery.logger.debug('\n* Executing query: ' + str(query[query_type]))
-        return cursor
+        return db.cursor().execute(query[query_type])
     except mysql.connector.Error as err:
-        gallery.logger.error('\n* Error in executing query: ' + str(query[query_type]))
+        gallery.logger.error('\n* Error in executing query: ' + str(err))
         return None
 
 
