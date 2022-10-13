@@ -1,13 +1,14 @@
 import random
 import sys
 from collections import OrderedDict
-from flask import request
+from flask import request, g
 from app import webapp 
 from flask import json
 import datetime
 import mysql.connector
 import threading
 import time
+from app import DBconfig
 
 global cache
 global memcacheStatistics
@@ -18,6 +19,30 @@ global memcacheConfig
 cache=OrderedDict()
 memcacheConfig = {'capacity': 4,  
                   'policy': 'LRU'} # default setting, get real time config from db
+
+
+def get_db():
+    """Establish the connection to the database.
+
+    Args:
+      n/a
+
+    Returns:
+      MySQLConnection: the connector to the available database.
+    """
+    
+    dbconnect = mysql.connector.connect(
+                user=DBconfig.db_config['user'],
+                password=DBconfig.db_config['password'],
+                host=DBconfig.db_config['host'],
+                database=DBconfig.db_config['database']
+            )
+        
+
+    return dbconnect
+
+
+
 
 
 class getResult:
@@ -108,6 +133,7 @@ def page():
     
 @webapp.before_first_request
 def threadedUpdate():
+    
     thread = threading.Thread(target=updatestat)
     thread.start()
     
@@ -160,11 +186,7 @@ def invalidateKey(key):
 def refreshConfiguration():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
-    cnx = mysql.connector.connect(
-                user='root',
-                password='199909012',
-                host='127.0.0.1',
-                database='ece1779')
+    cnx = get_db()
     
     cursor = cnx.cursor()
     query =  "SELECT capacity, lru FROM ece1779.memcache_config WHERE userid = 1;"
@@ -282,11 +304,7 @@ def put():
 def statistic():
     s=memcacheStatistics.getStat()
     
-    cnx = mysql.connector.connect(
-                user='root',
-                password='199909012',
-                host='127.0.0.1',
-                database='ece1779')
+    cnx = get_db()
     cursor = cnx.cursor()
     query =  "UPDATE ece1779.memcache_stat SET itemNum = %s, totalSize = %s, requestNum = %s, missRate = %s, hitRate = %s WHERE userid = 1;"
     cursor.execute(query,s)

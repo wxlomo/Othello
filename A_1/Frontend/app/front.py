@@ -14,6 +14,7 @@ import os
 import requests
 import base64
 from PIL import Image
+from app import DBconfig
 
 def get_db():
     """Establish the connection to the database.
@@ -27,10 +28,10 @@ def get_db():
     
     if 'db' not in g:
         g.db = mysql.connector.connect(
-            user='root',
-            password='199909012',
-            host='127.0.0.1',
-            database='ece1779'
+            user=DBconfig.db_config['user'],
+            password=DBconfig.db_config['password'],
+            host=DBconfig.db_config['host'],
+            database=DBconfig.db_config['database']
         )
     return g.db
 
