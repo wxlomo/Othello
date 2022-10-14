@@ -8,5 +8,5 @@
 from flask import Flask
 
 gallery = Flask(__name__)
-
+gallery.listen(3000, "0.0.0.0");
 from app import front
