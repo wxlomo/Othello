@@ -7,6 +7,6 @@
 """
 from flask import Flask
 
-gallery = Flask(__name__)
+front = Flask(__name__)
 
-from app import front
+from . import frontend

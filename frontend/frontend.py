@@ -1,19 +1,19 @@
 """
- * front.py
+ * frontend.py
  * front-end interface and router of the gallery web application
  *
  * Author: Weixuan Yang
  * Date: Oct. 11, 2022
 """
 
-from . import gallery
+from . import front
 from flask import render_template, request, g, escape
 from werkzeug.utils import secure_filename
 import mysql.connector
 import os
 import requests
 import base64
-from PIL import Image
+
 
 def get_db():
     """Establish the connection to the database.
@@ -35,7 +35,7 @@ def get_db():
     return g.db
 
 
-@gallery.teardown_appcontext
+@front.teardown_appcontext
 def teardown_db(exception):
     """Close the connection to the database after query executed.
 
@@ -86,13 +86,13 @@ def db_wrapper(query_type, arg1='', arg2=''):
     }
     db = get_db()
     if query_type not in query:
-        gallery.logger.error('\n* Wrong query type: ' + str(query_type))
+        front.logger.error('\n* Wrong query type: ' + str(query_type))
         return None
     try:
-        gallery.logger.debug('\n* Executing query: ' + str(query[query_type]))
+        front.logger.debug('\n* Executing query: ' + str(query[query_type]))
         return db.cursor().execute(query[query_type])
     except mysql.connector.Error as err:
-        gallery.logger.error('\n* Error in executing query: ' + str(err))
+        front.logger.error('\n* Error in executing query: ' + str(err))
         return None
 
 =======
@@ -111,7 +111,7 @@ def is_image(file):
            file.filename.rsplit('.', 1)[1].lower() in {'jpg', 'jpeg', 'tiff', 'gif', 'tif', 'bmp', 'webp', 'png'}
 
 
-@gallery.route('/')
+@front.route('/')
 def get_home():
     """Home page render.
 
@@ -124,7 +124,7 @@ def get_home():
     return render_template('index.html')
 
 
-@gallery.route('/upload')
+@front.route('/upload')
 def get_upload():
     """Upload page render.
 
@@ -137,7 +137,7 @@ def get_upload():
     return render_template('upload.html')
 
 
-@gallery.route('/view')
+@front.route('/view')
 def get_key():
     """View all page render.
 
@@ -147,7 +147,7 @@ def get_key():
     Returns:
       str: the arguments for the Jinja template
     """
-    gallery.logger.debug('\n* Viewing all image')
+    front.logger.debug('\n* Viewing all image')
     
     db = get_db()
     cursor=db.cursor()
@@ -159,7 +159,7 @@ def get_key():
     return render_template('view.html', cursor=cursor)
 
 
-@gallery.route('/retrieve', methods=['POST'])
+@front.route('/retrieve', methods=['POST'])
 def get_image():
     """Retrieve page render.
 
@@ -171,10 +171,10 @@ def get_image():
       
     """
     key = request.form['key']
-    gallery.logger.debug('\n* Retrieving an image by key: ' + str(key))
+    front.logger.debug('\n* Retrieving an image by key: ' + str(key))
     data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     if response.json() == 'Unknown key':
         db = get_db()
         cursor=db.cursor()
@@ -192,13 +192,13 @@ def get_image():
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
-        gallery.logger.debug(response.text)
+        front.logger.debug(response.text)
     else:
         image = response.json()
     return render_template('retrieve.html', image='data:image/png; base64, {0}'.format(image), key=escape(key))
 
 
-@gallery.route('/config')
+@front.route('/config')
 def get_config():
     """Configuration page render.
 
@@ -221,14 +221,14 @@ def get_config():
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     capacity, policy = cursor.fetchone()
-    gallery.logger.debug('\n* Viewing config with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    front.logger.debug('\n* Viewing config with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     if policy == 'lru':
         return render_template('config.html', policy='LRU', policyi='Random', capa=capacity)
     else:
         return render_template('config.html', policy='Random', policyi='LRU', capa=capacity)
 
 
-@gallery.route('/statistics')
+@front.route('/statistics')
 def get_statistics():
     """Statistics page render.
 
@@ -238,7 +238,7 @@ def get_statistics():
     Returns:
       str: the arguments for the Jinja template
     """
-    gallery.logger.debug('\n* Viewing statistics')
+    front.logger.debug('\n* Viewing statistics')
     db = get_db()
     cursor=db.cursor()
     query = "SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM ece1779.memcache_stat WHERE userid = 1;"
@@ -250,7 +250,7 @@ def get_statistics():
     return render_template('statistics.html', cursor=cursor)
 
 
-@gallery.route('/about')
+@front.route('/about')
 def get_about():
     """About page render.
 
@@ -260,11 +260,11 @@ def get_about():
     Returns:
       str: the arguments for the Jinja template
     """
-    gallery.logger.debug('\n* Viewing about')
+    front.logger.debug('\n* Viewing about')
     return render_template('about.html')
 
 
-@gallery.route('/putImage', methods=['POST'])
+@front.route('/putImage', methods=['POST'])
 def put_image():
     """Commit the page uploading to MemCache and database.
 
@@ -282,13 +282,13 @@ def put_image():
     path = path.replace('\\', '/')
     if len(path)>100:
         return render_template('result.html', result='Key and filename are too long, keep sum of key and filename length under 80 characters.')
-    gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image_file):
         return render_template('result.html', result='Please Upload An Image :(')
     image_file.save(path)
     data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     if response.json() == 'Unknown key':
        
         db = get_db()
@@ -322,7 +322,7 @@ def put_image():
             
     else:
         response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
-        gallery.logger.debug(response.text)
+        front.logger.debug(response.text)
         db = get_db()
         cursor=db.cursor()
         query = "UPDATE ece1779.memcache_keys SET value = %s WHERE id = %s;"
@@ -335,11 +335,11 @@ def put_image():
     data = {'key': key, 'value': image}
     
     response = requests.post("http://localhost:5001/put", data=data)
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
 
 
-@gallery.route('/putConfig', methods=['POST'])
+@front.route('/putConfig', methods=['POST'])
 def put_config():
     """Commit the changes in configurations.
 
@@ -353,7 +353,7 @@ def put_config():
     policy = request.form['policy']
     capacity = request.form['capacity']
 
-    gallery.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     db = get_db()
     cursor=db.cursor()
     query = "UPDATE ece1779.memcache_config SET lru = %s, capacity = %s WHERE userid = 1;"
@@ -363,13 +363,13 @@ def put_config():
         return render_template('result.html', result='Something Wrong :(')
     if request.form['clear']=="yes":
         response = requests.get("http://localhost:5001/clear")
-        gallery.logger.debug(response.text)
+        front.logger.debug(response.text)
     response = requests.get("http://localhost:5001/refreshConfiguration")
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     return render_template('result.html', result='Your Configuration Has Been Processed :)')
 
 
-@gallery.route('/api/upload', methods=['POST'])
+@front.route('/api/upload', methods=['POST'])
 def put_image_api():
     """The api to upload an image to the MemCache and database
 
@@ -385,7 +385,7 @@ def put_image_api():
             
     path = os.path.join('app/static/img', secure_filename(key+image_file.filename))
     
-    gallery.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if len(key)>45:
         return {
             'success': 'false',
@@ -430,7 +430,7 @@ def put_image_api():
     image_file.save(path)
     data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     if response.json() == 'Unknown key':
         
         
@@ -468,7 +468,7 @@ def put_image_api():
             db.commit()
     else:
         response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
-        gallery.logger.debug(response.text)
+        front.logger.debug(response.text)
         db = get_db()
         cursor=db.cursor()
         query = "UPDATE ece1779.memcache_keys SET value = %s WHERE id = %s;"
@@ -485,13 +485,13 @@ def put_image_api():
     image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
     data = {'key': key, 'value': image}
     response = requests.post("http://localhost:5001/put", data=data)
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     return {
         'success': 'true',
     }
 
 
-@gallery.route('/api/list_keys', methods=['POST'])
+@front.route('/api/list_keys', methods=['POST'])
 def get_key_api():
     """The api to view all the keys stored in the database
 
@@ -501,7 +501,7 @@ def get_key_api():
     Returns:
       dict: the JSON format response of the HTTP request
     """
-    gallery.logger.debug('\n* Viewing all image')
+    front.logger.debug('\n* Viewing all image')
     keys = []
     db = get_db()
     cursor=db.cursor()
@@ -532,7 +532,7 @@ def get_key_api():
         }
 
 
-@gallery.route('/api/key/<key_value>', methods=['POST'])
+@front.route('/api/key/<key_value>', methods=['POST'])
 def get_image_api(key_value):
     """The api to retrieve an image by the given key from MemCache or database
 
@@ -545,10 +545,10 @@ def get_image_api(key_value):
     """
     
     key = key_value
-    gallery.logger.debug('\n* Retrieving an image by key: ' + str(key))
+    front.logger.debug('\n* Retrieving an image by key: ' + str(key))
     data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
-    gallery.logger.debug(response.text)
+    front.logger.debug(response.text)
     if response.json() == 'Unknown key':
         db = get_db()
         cursor=db.cursor()
@@ -578,7 +578,7 @@ def get_image_api(key_value):
             image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
-        gallery.logger.debug(response.text)
+        front.logger.debug(response.text)
     else:
         image = response.json()
     return {

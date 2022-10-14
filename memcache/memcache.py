@@ -2,13 +2,12 @@ import random
 import sys
 from collections import OrderedDict
 from flask import request, g
-from app import webapp 
+from . import mem, dbconfig
 from flask import json
 import datetime
 import mysql.connector
 import threading
 import time
-from app import DBconfig
 
 global cache
 global memcacheStatistics
@@ -32,10 +31,10 @@ def get_db():
     """
     
     dbconnect = mysql.connector.connect(
-                user=DBconfig.db_config['user'],
-                password=DBconfig.db_config['password'],
-                host=DBconfig.db_config['host'],
-                database=DBconfig.db_config['database']
+                user=dbconfig.db_config['user'],
+                password=dbconfig.db_config['password'],
+                host=dbconfig.db_config['host'],
+                database=dbconfig.db_config['database']
             )
         
 
@@ -127,11 +126,11 @@ memcacheStatistics = cachestat()
 
 
 
-@webapp.route('/')
+@mem.route('/')
 def page():
-    return "Started successfully"
+    return "Memcache Is Ready"
     
-@webapp.before_first_request
+@mem.before_first_request
 def threadedUpdate():
     
     thread = threading.Thread(target=updatestat)
@@ -142,21 +141,21 @@ def updatestat():
         time.sleep(5)
         statistic()
 
-@webapp.route('/clear')
+@mem.route('/clear')
 def clearCache():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
     
     cache.clear()
     memcacheStatistics.clear()
-    response = webapp.response_class(
+    response = mem.response_class(
         response=json.dumps("OK"),
         status=200,
         mimetype='application/json'
     )
     return response
     
-@webapp.route('/invalidateKey/<key>')   
+@mem.route('/invalidateKey/<key>')   
 def invalidateKey(key):
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
@@ -165,14 +164,14 @@ def invalidateKey(key):
         size=sys.getsizeof(value)
         memcacheStatistics.removeItem(size)
         del cache[key]
-        response = webapp.response_class(
+        response = mem.response_class(
             response=json.dumps("OK"),
             status=200,
             mimetype='application/json'
         )
         
     else:
-        response = webapp.response_class(
+        response = mem.response_class(
             response=json.dumps("Unknown key"),
             status=400,
             mimetype='application/json'
@@ -182,7 +181,7 @@ def invalidateKey(key):
     
     
     
-@webapp.route('/refreshConfiguration')   
+@mem.route('/refreshConfiguration')   
 def refreshConfiguration():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
@@ -214,7 +213,7 @@ def refreshConfiguration():
             size=sys.getsizeof(delvalue)
             memcacheStatistics.removeItem(size)
             del cache[delkey]
-    response = webapp.response_class(
+    response = mem.response_class(
         response=json.dumps("OK"),
         status=200,
         mimetype='application/json'
@@ -222,7 +221,7 @@ def refreshConfiguration():
     return response
     
     
-@webapp.route('/get',methods=['POST'])
+@mem.route('/get',methods=['POST'])
 def get():
     t=datetime.datetime.now()
     memcacheStatistics.addRequestTime(t)
@@ -236,7 +235,7 @@ def get():
         if memcacheConfig['policy'] == 'LRU':
             cache.move_to_end(key) 
             
-        response = webapp.response_class(
+        response = mem.response_class(
             response=json.dumps(value),
             status=200,
             mimetype='application/json'
@@ -244,7 +243,7 @@ def get():
     else:
         r=getResult(t, 'miss')
         memcacheStatistics.addGetResult(r)
-        response = webapp.response_class(
+        response = mem.response_class(
             response=json.dumps("Unknown key"),
             status=400,
             mimetype='application/json'
@@ -252,7 +251,7 @@ def get():
 
     return response
 
-@webapp.route('/put',methods=['POST']) 
+@mem.route('/put',methods=['POST']) 
 def put():
    
     t=datetime.datetime.now()
@@ -267,7 +266,7 @@ def put():
         memcacheStatistics.removeItem(size)
         del cache[key]
     if image_size > memcacheConfig['capacity']*1024*1024:
-        response = webapp.response_class(
+        response = mem.response_class(
         response=json.dumps("Image too big to cache"),
         status=200,
         mimetype='application/json'
@@ -291,7 +290,7 @@ def put():
     if memcacheConfig['policy'] == 'LRU':
         cache.move_to_end(key) 
         
-    response = webapp.response_class(
+    response = mem.response_class(
         response=json.dumps("OK"),
         status=200,
         mimetype='application/json'
@@ -300,7 +299,7 @@ def put():
     return response
 
 
-@webapp.route('/statistic') 
+@mem.route('/statistic') 
 def statistic():
     s=memcacheStatistics.getStat()
     
@@ -313,7 +312,7 @@ def statistic():
     cursor.close()
     cnx.close()
     
-    response = webapp.response_class(
+    response = mem.response_class(
         response=json.dumps('OK'),
         status=200,
         mimetype='application/json'
