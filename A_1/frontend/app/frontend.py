@@ -6,7 +6,7 @@
  * Date: Oct. 11, 2022
 """
 
-from . import front
+from . import front, dbconfig
 from flask import render_template, request, g, escape
 from werkzeug.utils import secure_filename
 import mysql.connector
@@ -27,10 +27,10 @@ def get_db():
     
     if 'db' not in g:
         g.db = mysql.connector.connect(
-            user='root',
-            password='199909012',
-            host='127.0.0.1',
-            database='ece1779'
+            user=dbconfig.db_config['user'],
+            password=dbconfig.db_config['password'],
+            host=dbconfig.db_config['host'],
+            database=dbconfig.db_config['database']
         )
     return g.db
 
@@ -50,7 +50,6 @@ def teardown_db(exception):
         db.close()
 
 
-<<<<<<< HEAD
 def db_wrapper(query_type, arg1='', arg2=''):
     """Connect to the database and try executing queries in the dict.
 
@@ -63,40 +62,35 @@ def db_wrapper(query_type, arg1='', arg2=''):
       MySQLCursor: the cursor contains the requested data, None if query
         type is not in the dict or the execution failed.
     """
-    query = {
-        'get_key': '''SELECT "key" 
-                      FROM ece1779.memcache_keys;''',
-        'get_image': '''SELECT value 
-                        FROM ece1779.memcache_keys 
-                        WHERE "key" = %s;'''.format(arg1),
-        'get_config': '''SELECT capacity,lru 
-                         FROM ece1779.memcache_config 
-                         WHERE userid = 1;''',
-        'get_statistics': '''SELECT itemNum, totalSize, requestNum, missRate, hitRate 
-                             FROM ece1779.memcache_stat 
-                             WHERE userid = 1;''',
-        'put_image': '''INSERT INTO ece1779.memcache_keys (key, value) 
-                        VALUES (%s, %s);'''.format(arg1, arg2),
-        'put_image_exist': '''UPDATE ece1779.memcache_keys 
-                              SET value = %s
-                              WHERE "key" = %s;'''.format(arg1, arg2),
-        'put_config': '''UPDATE ece1779.memcache_config 
-                         SET lru = %s, capacity = %s 
-                         WHERE userid = 1;'''.format(arg1, arg2)
-    }
     db = get_db()
-    if query_type not in query:
+    if query_type == 'get_key':
+        query = "SELECT id FROM gallery.key_mapping;"
+    elif query_type == 'get_image':
+        query = f"SELECT value FROM gallery.key_mapping WHERE id = '{arg1}'"
+    elif query_type == 'get_config':
+        query = "SELECT capacity,lru FROM gallery.memcache_config WHERE userid = 1;"
+    elif query_type == 'get_statistics':
+        query = "SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM gallery.memcache_stat WHERE userid = 1;"
+    elif query_type == 'put_image':
+        query = f"INSERT INTO gallery.key_mapping  (`id`, `value`) VALUES ('{arg1}', '{arg2}');"
+    elif query_type == 'put_image_exist':
+        query = f"UPDATE gallery.key_mapping SET value = '{arg2}' WHERE id = '{arg1}';"
+    elif query_type == 'put_config':
+        query = f"UPDATE gallery.memcache_config SET lru = '{arg1}', capacity = {arg2} WHERE userid = 1;"
+    else:
         front.logger.error('\n* Wrong query type: ' + str(query_type))
         return None
     try:
-        front.logger.debug('\n* Executing query: ' + str(query[query_type]))
-        return db.cursor().execute(query[query_type])
+        front.logger.debug('\n* Executing query: ' + str(query))
+        cursor = db.cursor()
+        cursor.execute(query)
+        if query_type == 'put_image' or query_type == 'put_image_exist' or query_type == 'put_config':
+            db.commit()
+        return cursor
     except mysql.connector.Error as err:
         front.logger.error('\n* Error in executing query: ' + str(err))
         return None
 
-=======
->>>>>>> 4655fb7d98ba3e881c6a78d925d3ac77f3e240f2
 
 def is_image(file):
     """Check if the file format is an image
@@ -143,17 +137,12 @@ def get_key():
 
     Args:
       n/a
-    cursor = db_wrapper('get_key')
+
     Returns:
       str: the arguments for the Jinja template
     """
     front.logger.debug('\n* Viewing all image')
-    
-    db = get_db()
-    cursor=db.cursor()
-    query = "SELECT id FROM ece1779.memcache_keys;"
-    cursor.execute(query)
-    
+    cursor = db_wrapper('get_key')
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     return render_template('view.html', cursor=cursor)
@@ -176,20 +165,17 @@ def get_image():
     response = requests.post("http://localhost:5001/get", data=data)
     front.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        db = get_db()
-        cursor=db.cursor()
-        
-        query = "SELECT value FROM ece1779.memcache_keys WHERE id = %s"
-        cursor.execute(query,(key,))
+        cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
-        path = cursor.fetchall()[0][0]
-        print(path)
-        if not path:
+        old_path = ''
+        for row in cursor:
+            old_path = row[0]
+        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
+        if not old_path:
             return render_template('result.html', result='Your Key Is Invalid :(')
         else:
-        
-            image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
+            image = base64.b64encode(open(old_path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
         front.logger.debug(response.text)
@@ -207,25 +193,16 @@ def get_config():
 
     Returns:
       str: the arguments for the Jinja template
-      db = get_db()
-    cursor=db.cursor()
-    query = "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
-    cursor.execute(query)
-      cursor = db_wrapper('get_config')
     """
-    db = get_db()
-    cursor=db.cursor()
-    query = "SELECT capacity,lru FROM ece1779.memcache_config WHERE userid = 1;"
-    cursor.execute(query)
-    
+    cursor = db_wrapper('get_config')
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     capacity, policy = cursor.fetchone()
     front.logger.debug('\n* Viewing config with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     if policy == 'lru':
-        return render_template('config.html', policy='LRU', policyi='Random', capa=capacity)
+        return render_template('config.html', poli='LRU', capa=capacity)
     else:
-        return render_template('config.html', policy='Random', policyi='LRU', capa=capacity)
+        return render_template('config.html', poli='Random', capa=capacity)
 
 
 @front.route('/statistics')
@@ -239,10 +216,7 @@ def get_statistics():
       str: the arguments for the Jinja template
     """
     front.logger.debug('\n* Viewing statistics')
-    db = get_db()
-    cursor=db.cursor()
-    query = "SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM ece1779.memcache_stat WHERE userid = 1;"
-    cursor.execute(query)
+    cursor = db_wrapper('get_statistics')
     if not cursor:
         
         return render_template('result.html', result='Something Wrong :(')
@@ -276,64 +250,35 @@ def put_image():
     """
     image_file = request.files['image']
     key = request.form['key']
-    if len(key)>45:
-        return render_template('result.html', result='Key is too long, please input key less than 45 characters.')
-    path = os.path.join('app/static/img', secure_filename(key+image_file.filename))
+    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
     path = path.replace('\\', '/')
-    if len(path)>100:
-        return render_template('result.html', result='Key and filename are too long, keep sum of key and filename length under 80 characters.')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image_file):
-        return render_template('result.html', result='Please Upload An Image :(')
-    image_file.save(path)
+        return render_template('result.html', result='Input File Format Is Not Supported :(')
     data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)
     front.logger.debug(response.text)
     if response.json() == 'Unknown key':
-       
-        db = get_db()
-        cursor=db.cursor()
-        query = "SELECT id FROM ece1779.memcache_keys;"
-        cursor.execute(query)
+        cursor = db_wrapper('get_image', key)
         if not cursor:
-            
             return render_template('result.html', result='Something Wrong :(')
-    
-        existed=False
+        old_path = ''
         for row in cursor:
-            if key in row:
-                existed=True
-        if not existed:  
-
-            db = get_db()
-            cursor=db.cursor()
-            query = "INSERT INTO ece1779.memcache_keys  (`id`, `value`) VALUES (%s, %s);"
-            cursor.execute(query, (key,path,))
-            db.commit()
-            
+            old_path = row[0]
+        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
+        if not old_path:
+            cursor = db_wrapper('put_image', key, path)
         else:
-            
-            db = get_db()
-            cursor=db.cursor()
-            query = "UPDATE ece1779.memcache_keys SET 'value' = %s WHERE 'id' = %s;"
-            cursor.execute(query,(path, key,))
-            db.commit()
-           
-            
+            cursor = db_wrapper('put_image_exist', key, path)
     else:
         response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
         front.logger.debug(response.text)
-        db = get_db()
-        cursor=db.cursor()
-        query = "UPDATE ece1779.memcache_keys SET value = %s WHERE id = %s;"
-        cursor.execute(query,(path, key,))
-        db.commit()
-        
+        cursor = db_wrapper('put_image_exist', key, path)
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
+    image_file.save(path)
     image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
     data = {'key': key, 'value': image}
-    
     response = requests.post("http://localhost:5001/put", data=data)
     front.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
@@ -354,19 +299,15 @@ def put_config():
     capacity = request.form['capacity']
 
     front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    db = get_db()
-    cursor=db.cursor()
-    query = "UPDATE ece1779.memcache_config SET lru = %s, capacity = %s WHERE userid = 1;"
-    cursor.execute(query,(policy, capacity))
-    db.commit()
+    cursor = db_wrapper('put_config', policy, capacity)
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
-    if request.form['clear']=="yes":
+    if request.form['clear'] == "yes":
         response = requests.get("http://localhost:5001/clear")
         front.logger.debug(response.text)
     response = requests.get("http://localhost:5001/refreshConfiguration")
     front.logger.debug(response.text)
-    return render_template('result.html', result='Your Configuration Has Been Processed :)')
+    return render_template('result.html', result='Your Request Has Been Processed :)')
 
 
 @front.route('/api/upload', methods=['POST'])
@@ -381,42 +322,31 @@ def put_image_api():
     """
     image_file = request.files['file']
     key = request.form['key']
-    
-            
-    path = os.path.join('app/static/img', secure_filename(key+image_file.filename))
-    
+    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
+    path = path.replace('\\', '/')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
-    if len(key)>45:
+    if not key or len(key) > 100:
         return {
             'success': 'false',
             'error': {
                 'code': 400,
-                'message': 'Bad Request: Key is too long, please input key less than 45 characters.'
+                'message': 'Bad Request: Input key is invalid.'
             }
         }
-    elif len(path)>100:
+    if len(key) > 95:
         return {
             'success': 'false',
             'error': {
                 'code': 400,
-                'message': 'Bad Request: Key and filename are too long, keep sum of key and filename length under 80 characters.'
+                'message': 'Bad Request: Input key is too long, it has to shorter than 100 characters.'
             }
         }
-         
-    if not key:
+    if not image_file or not is_image(image_file):
         return {
             'success': 'false',
             'error': {
                 'code': 400,
-                'message': 'Bad Request: No valid key input.'
-            }
-        }
-    if not image_file:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 400,
-                'message': 'Bad Request: No valid image input.'
+                'message': 'Bad Request: Input file is invalid.'
             }
         }
     if not is_image(image_file):
@@ -424,7 +354,7 @@ def put_image_api():
             'success': 'false',
             'error': {
                 'code': 400,
-                'message': 'Bad Request: The uploaded file is not an image.'
+                'message': 'Bad Request: Input file format is not supported.'
             }
         }
     image_file.save(path)
@@ -432,14 +362,8 @@ def put_image_api():
     response = requests.post("http://localhost:5001/get", data=data)
     front.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        
-        
-        db = get_db()
-        cursor=db.cursor()
-        query = "SELECT id FROM ece1779.memcache_keys;"
-        cursor.execute(query)
+        cursor = db_wrapper('get_image', key)
         if not cursor:
-            
             return {
                 'success': 'false',
                 'error': {
@@ -447,33 +371,18 @@ def put_image_api():
                     'message': 'Internal Server Error: Fail in connecting to database'
                 }
             }
-    
-        existed=False
+        old_path = ''
         for row in cursor:
-            if key in row:
-                existed=True
-        if not existed:  
-            db = get_db()
-            cursor=db.cursor()
-            query = "INSERT INTO ece1779.memcache_keys  (`id`, `value`) VALUES (%s, %s);"
-            cursor.execute(query, (key,path,))
-            db.commit()
-            
+            old_path = row[0]
+        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
+        if not old_path:
+            cursor = db_wrapper('put_image', key, path)
         else:
-            
-            db = get_db()
-            cursor=db.cursor()
-            query = "UPDATE ece1779.memcache_keys SET 'value' = %s WHERE 'id' = %s;"
-            cursor.execute(query,(path, key,))
-            db.commit()
+            cursor = db_wrapper('put_image_exist', key, path)
     else:
         response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
         front.logger.debug(response.text)
-        db = get_db()
-        cursor=db.cursor()
-        query = "UPDATE ece1779.memcache_keys SET value = %s WHERE id = %s;"
-        cursor.execute(query,(path, key,))
-        db.commit()
+        cursor = db_wrapper('put_image_exist', key, path)
     if not cursor:
         return {
             'success': 'false',
@@ -503,10 +412,7 @@ def get_key_api():
     """
     front.logger.debug('\n* Viewing all image')
     keys = []
-    db = get_db()
-    cursor=db.cursor()
-    query = "SELECT id FROM ece1779.memcache_keys;"
-    cursor.execute(query)
+    cursor = db_wrapper('get_key')
     if not cursor:
         return {
             'success': 'false',
@@ -550,11 +456,7 @@ def get_image_api(key_value):
     response = requests.post("http://localhost:5001/get", data=data)
     front.logger.debug(response.text)
     if response.json() == 'Unknown key':
-        db = get_db()
-        cursor=db.cursor()
-        
-        query = "SELECT value FROM ece1779.memcache_keys WHERE id = %s"
-        cursor.execute(query,(key,))
+        cursor = db_wrapper('get_image', key)
         if not cursor:
             return {
                 'success': 'false',
@@ -564,7 +466,7 @@ def get_image_api(key_value):
                 }
             }
         path = cursor.fetchall()[0][0]
-        print(path)
+        front.logger.debug('\n* Retrieving returns path: ' + str(path))
         if not path:
             return {
                 'success': 'false',
@@ -585,5 +487,3 @@ def get_image_api(key_value):
         'success': 'true',
         'content': image
     }
-    
-    

@@ -1,8 +1,8 @@
-CREATE DATABASE  IF NOT EXISTS `ece1779` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `ece1779`;
+CREATE DATABASE  IF NOT EXISTS `gallery` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `gallery`;
 -- MySQL dump 10.13  Distrib 8.0.30, for Win64 (x86_64)
 --
--- Host: 127.0.0.1    Database: ece1779
+-- Host: 127.0.0.1    Database: gallery
 -- ------------------------------------------------------
 -- Server version	8.0.30
 
@@ -43,13 +43,13 @@ INSERT INTO `memcache_config` VALUES (1,4,'lru');
 UNLOCK TABLES;
 
 --
--- Table structure for table `memcache_keys`
+-- Table structure for table `key_mapping`
 --
 
-DROP TABLE IF EXISTS `memcache_keys`;
+DROP TABLE IF EXISTS `key_mapping`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `memcache_keys` (
+CREATE TABLE `key_mapping` (
   `id` varchar(45) NOT NULL,
   `value` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
@@ -58,12 +58,12 @@ CREATE TABLE `memcache_keys` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `memcache_keys`
+-- Dumping data for table `key_mapping`
 --
 
-LOCK TABLES `memcache_keys` WRITE;
-/*!40000 ALTER TABLE `memcache_keys` DISABLE KEYS */;
-/*!40000 ALTER TABLE `memcache_keys` ENABLE KEYS */;
+LOCK TABLES `key_mapping` WRITE;
+/*!40000 ALTER TABLE `key_mapping` DISABLE KEYS */;
+/*!40000 ALTER TABLE `key_mapping` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

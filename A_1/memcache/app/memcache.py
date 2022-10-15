@@ -188,7 +188,7 @@ def refreshConfiguration():
     cnx = get_db()
     
     cursor = cnx.cursor()
-    query =  "SELECT capacity, lru FROM ece1779.memcache_config WHERE userid = 1;"
+    query =  "SELECT capacity, lru FROM gallery.memcache_config WHERE userid = 1;"
     cursor.execute(query)
     capacity, policy = cursor.fetchone()
     
@@ -305,7 +305,7 @@ def statistic():
     
     cnx = get_db()
     cursor = cnx.cursor()
-    query =  "UPDATE ece1779.memcache_stat SET itemNum = %s, totalSize = %s, requestNum = %s, missRate = %s, hitRate = %s WHERE userid = 1;"
+    query =  "UPDATE gallery.memcache_stat SET itemNum = %s, totalSize = %s, requestNum = %s, missRate = %s, hitRate = %s WHERE userid = 1;"
     cursor.execute(query,s)
     
     cnx.commit()

@@ -1,3 +1,7 @@
-# Ignore VisualStudioCode settings and Pycharm files
 **/.vscode
 **/.idea
+**/__pycache__
+**/img
+!**/img/index.jpg
+
+
