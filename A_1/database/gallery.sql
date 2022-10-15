@@ -52,7 +52,7 @@ DROP TABLE IF EXISTS `key_mapping`;
 CREATE TABLE `key_mapping` (
   `id` varchar(45) NOT NULL,
   `value` varchar(100) NOT NULL,
-  `userid` int DEFAULT '0',
+  `userid` int DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `key_UNIQUE` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
