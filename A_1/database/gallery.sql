@@ -110,7 +110,7 @@ DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
   `iduser` int NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (`iduser`),
-  UNIQUE KEY `username_UNIQUE` (`username`)
+  UNIQUE KEY `iduser_UNIQUE` (`iduser`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
