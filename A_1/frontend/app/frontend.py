@@ -181,7 +181,7 @@ def get_image():
         front.logger.debug(response.text)
     else:
         image = response.json()
-    return render_template('retrieve.html', image='data:image/png; base64, {0}'.format(image), key=escape(key))
+    return render_template('retrieve.html', image='data:image/*; base64, {0}'.format(image), key=escape(key))
 
 
 @front.route('/config')
