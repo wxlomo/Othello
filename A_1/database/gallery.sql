@@ -52,6 +52,7 @@ DROP TABLE IF EXISTS `key_mapping`;
 CREATE TABLE `key_mapping` (
   `id` varchar(45) NOT NULL,
   `value` varchar(100) NOT NULL,
+  `userid` int DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `key_UNIQUE` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
@@ -108,8 +109,6 @@ DROP TABLE IF EXISTS `user`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user` (
   `iduser` int NOT NULL AUTO_INCREMENT,
-  `username` varchar(45) NOT NULL,
-  `password` varchar(45) NOT NULL,
   PRIMARY KEY (`iduser`),
   UNIQUE KEY `username_UNIQUE` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb3;
@@ -121,7 +120,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'admin','admin');
+INSERT INTO `user` VALUES (1);
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
