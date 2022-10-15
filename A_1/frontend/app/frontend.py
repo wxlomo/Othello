@@ -465,9 +465,11 @@ def get_image_api(key_value):
                     'message': 'Internal Server Error: Fail in connecting to database'
                 }
             }
-        path = cursor.fetchall()[0][0]
-        front.logger.debug('\n* Retrieving returns path: ' + str(path))
-        if not path:
+        old_path = ''
+        for row in cursor:
+            old_path = row[0]
+        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
+        if not old_path:
             return {
                 'success': 'false',
                 'error': {
@@ -476,8 +478,7 @@ def get_image_api(key_value):
                 }
             }
         else:
-        
-            image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
+            image = base64.b64encode(open(old_path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
         front.logger.debug(response.text)
