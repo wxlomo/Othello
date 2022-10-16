@@ -1,6 +1,6 @@
 db_config = {
     'user': 'root',
-    'password': 'ece1779pass',
+    'password': '199909012',
     'host': '127.0.0.1',
     'database': 'gallery'
 }

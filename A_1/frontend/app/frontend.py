@@ -250,7 +250,7 @@ def put_image():
     """
     image_file = request.files['image']
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
+    path = os.path.join('app/static/img/uploaded', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
     path = path.replace('\\', '/')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image_file):
@@ -297,7 +297,6 @@ def put_config():
     
     policy = request.form['policy']
     capacity = request.form['capacity']
-
     front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     cursor = db_wrapper('put_config', policy, capacity)
     if not cursor:
@@ -322,7 +321,7 @@ def put_image_api():
     """
     image_file = request.files['file']
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
+    path = os.path.join('app/static/img/uploaded', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
     path = path.replace('\\', '/')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not key or len(key) > 100:
@@ -487,4 +486,37 @@ def get_image_api(key_value):
     return {
         'success': 'true',
         'content': image
+    }
+
+
+@front.route('/api/config', methods=['POST'])
+def put_config_api():
+    """The api to commit the changes in configurations.
+
+    Args:
+      n/a
+
+    Returns:
+      dict: the JSON format response of the HTTP request
+    """
+
+    policy = request.form['policy']
+    capacity = request.form['capacity']
+    front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    cursor = db_wrapper('put_config', policy, capacity)
+    if not cursor:
+        return {
+            'success': 'false',
+            'error': {
+                'code': 500,
+                'message': 'Internal Server Error: Fail in connecting to database'
+            }
+        }
+    if request.form['clear'] == "yes":
+        response = requests.get("http://localhost:5001/clear")
+        front.logger.debug(response.text)
+    response = requests.get("http://localhost:5001/refreshConfiguration")
+    front.logger.debug(response.text)
+    return {
+        'success': 'true'
     }
