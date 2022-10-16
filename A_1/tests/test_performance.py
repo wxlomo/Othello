@@ -1,3 +1,11 @@
+"""
+ * test_performance.py
+ * performance testing code for the gallery web application
+ *
+ * Author: Weixuan Yang
+ * Date: Oct. 11, 2022
+"""
+
 import requests
 import random
 from time import time
@@ -29,34 +37,26 @@ def write_test():
 
 
 def latency_test(request_number, read_ratio):
-    read_number = round(request_number * read_ratio)
-    write_number = request_number - read_number
-    latency = 0.0
+    total_latency = 0.0
     for i in range(request_number):
         if random.random() <= read_ratio:
-            latency += read_test()
+            total_latency += read_test()
         else:
-            latency += write_test()
-    return latency / request_number
+            total_latency += write_test()
+    return total_latency / request_number
 
 
 def throughput_test(max_time, read_ratio):
-    read_number = round(request_number * read_ratio)
-    write_number = request_number - read_number
-    i = 0
-    read_i = 0
-    write_i = 0
-    latency = 0.0
-    while i < request_number:
-        if random.choice(select) == 0 and read_i < read_number:
-            latency += read_test()
-            read_i += 1
-            i += 1
-        elif random.choice(select) == 1 and write_i < write_number:
-            latency += write_test()
-            write_i += 1
-            i += 1
-    return latency / request_number
+    total_latency = 0.0
+    total_request = 0
+    while total_latency < max_time:
+        if random.random() <= read_ratio:
+            total_request += 1
+            total_latency += read_test()
+        else:
+            total_request += 1
+            total_latency += write_test()
+    return request_number
 
 
 
