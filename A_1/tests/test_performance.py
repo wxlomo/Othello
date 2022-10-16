@@ -162,6 +162,6 @@ def throughput_figure(read_ratio=0.5):
     sns.lineplot(data=df).get_figure().savefig('img/throughput_' + str(read_ratio) + '.png')
 
 
-#latency_figure(0.2), latency_figure(0.5), latency_figure(0.8)
+latency_figure(0.2), latency_figure(0.5), latency_figure(0.8)
 throughput_figure(0.2), throughput_figure(0.5), throughput_figure(0.8)
 print('DONE.')
