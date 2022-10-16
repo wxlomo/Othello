@@ -134,7 +134,10 @@ def latency_figure(read_ratio=0.5):
     for request_number in request_numbers:
         no.append(latency_test(request_number, read_ratio))
     df = pd.DataFrame(data={'requests': request_numbers, 'random': random, 'lru': lru, 'no memcache': no}).set_index('requests')
-    sns.lineplot(data=df).get_figure().savefig('img/latency_' + str(read_ratio) + '.png')
+    fig = sns.lineplot(data=df, palette="vlag")
+    fig.set_xlabel('Number of requests')
+    fig.set_ylabel('Latency (seconds)')
+    fig.get_figure().savefig('img/latency_' + str(read_ratio) + '.png')
 
 
 def throughput_figure(read_ratio=0.5):
@@ -159,7 +162,10 @@ def throughput_figure(read_ratio=0.5):
     for time_window in time_windows:
         no.append(throughput_test(time_window, read_ratio))
     df = pd.DataFrame(data={'time_window': time_windows, 'random': random, 'lru': lru, 'no memcache': no}).set_index('time_window')
-    sns.lineplot(data=df).get_figure().savefig('img/throughput_' + str(read_ratio) + '.png')
+    fig = sns.barplot(data=df, palette="vlag")
+    fig.set_xlabel('Units of time (seconds)')
+    fig.set_ylabel('Maximum number of requests')
+    fig.get_figure().savefig('img/throughput_' + str(read_ratio) + '.png')
 
 
 latency_figure(0.2), latency_figure(0.5), latency_figure(0.8)
