@@ -12,12 +12,14 @@ import seaborn as sns
 import pandas as pd
 from time import time
 from matplotlib import pyplot as plt
+sns.set_theme(style="whitegrid")
 
 
 url = "http://54.226.158.76:5000"
-key = list(range(0, 10))
+key = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 5]
 request_numbers = list(range(1, 102, 10))
-time_windows = [1.0, 2.0, 5.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0]
+time_windows = [1.0, 2.0, 4.0, 8.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
+read_ratios = [0.2, 0.5, 0.8]
 
 
 def read_test():
@@ -116,58 +118,52 @@ def latency_figure(read_ratio=0.5):
     """Generate the latency trend figure for certain read_ratio
 
         Args:
-          read_ratio (int): the ratio of read requests in total requests
+          read_ratio (float): the ratio of read requests in total requests
 
         Returns:
           n/a
-        """
-    random = []
-    lru = []
-    no = []
-    config('random', 10)
+    """
+    data = []
+    config('random', 3)
     for request_number in request_numbers:
-        random.append(latency_test(request_number, read_ratio))
-    config('lru', 10)
+        data.append([request_number, latency_test(request_number, read_ratio), 'random'])
+    config('lru', 3)
     for request_number in request_numbers:
-        lru.append(latency_test(request_number, read_ratio))
+        data.append([request_number, latency_test(request_number, read_ratio), 'lru'])
     config('lru', 0)
     for request_number in request_numbers:
-        no.append(latency_test(request_number, read_ratio))
-    df = pd.DataFrame(data={'requests': request_numbers, 'random': random, 'lru': lru, 'no memcache': no}).set_index('requests')
-    fig = sns.lineplot(data=df, palette="vlag")
-    fig.set_xlabel('Number of requests')
-    fig.set_ylabel('Latency (seconds)')
-    fig.get_figure().savefig('img/latency_' + str(read_ratio) + '.png')
+        data.append([request_number, latency_test(request_number, read_ratio), 'no'])
+    df = pd.DataFrame(data, columns=['Number of requests', 'Latency (seconds)', 'Policy'])
+    fig = sns.relplot(data=df, x='Number of requests', y='Latency (seconds)', kind='line', style='Policy', hue='Policy')
+    #[plt.annotate("{:.2f}".format(row[1]), (row[0]-0.5, row[1]+0.005)) for row in zip(df['Number of requests'], df['Latency (seconds)'])]
+    fig.fig.savefig('img/latency_' + str(read_ratio) + '.png')
 
 
 def throughput_figure(read_ratio=0.5):
     """Generate the latency trend figure for certain read_ratio
 
         Args:
-          read_ratio (int): the ratio of read requests in total requests
+          read_ratio (float): the ratio of read requests in total requests
 
         Returns:
           n/a
-        """
-    random = []
-    lru = []
-    no = []
-    config('random', 10)
+    """
+    data = []
+    config('random', 3)
     for time_window in time_windows:
-        random.append(throughput_test(time_window, read_ratio))
-    config('lru', 10)
+        data.append([time_window, throughput_test(time_window, read_ratio), 'random'])
+    config('lru', 3)
     for time_window in time_windows:
-        lru.append(throughput_test(time_window, read_ratio))
+        data.append([time_window, throughput_test(time_window, read_ratio), 'lru'])
     config('lru', 0)
     for time_window in time_windows:
-        no.append(throughput_test(time_window, read_ratio))
-    df = pd.DataFrame(data={'time_window': time_windows, 'random': random, 'lru': lru, 'no memcache': no}).set_index('time_window')
-    fig = sns.barplot(data=df, palette="vlag")
-    fig.set_xlabel('Units of time (seconds)')
-    fig.set_ylabel('Maximum number of requests')
-    fig.get_figure().savefig('img/throughput_' + str(read_ratio) + '.png')
+        data.append([time_window, throughput_test(time_window, read_ratio), 'no'])
+    df = pd.DataFrame(data, columns=['Units of time (seconds)', 'Maximum number of requests', 'Policy'])
+    fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue='Policy', ci=None)
+    fig.fig.savefig('img/throughput_' + str(read_ratio) + '.png')
 
 
-latency_figure(0.2), latency_figure(0.5), latency_figure(0.8)
-throughput_figure(0.2), throughput_figure(0.5), throughput_figure(0.8)
+for ratio in read_ratios:
+    latency_figure(ratio)
+    throughput_figure(ratio)
 print('DONE.')
