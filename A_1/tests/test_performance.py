@@ -30,7 +30,7 @@ def read_test():
       float: the seconds of latency to handle the request
     """
     random_key = random.choice(key)
-    response = requests.post(url + "/api/key/" + str(random_key))
+    response = requests.post(url + "/api/key/" + str(random_key), verify=False)
     if response.status_code == 500:
         raise Exception('front-end failure')
     return response.elapsed.total_seconds()
@@ -49,7 +49,7 @@ def write_test():
     image = open('img/test.jpg', 'rb')
     data = {'key': random_key}
     files = {'file': image}
-    response = requests.post(url + "/api/upload", files=files, data=data)
+    response = requests.post(url + "/api/upload", files=files, data=data, verify=False)
     if response.status_code == 500:
         raise Exception('front-end failure')
     return response.elapsed.total_seconds()
@@ -66,7 +66,7 @@ def config(policy, capacity):
       n/a
     """
     data = {'policy': policy, 'capacity': capacity, 'clear': 'yes'}
-    response = requests.post(url + "/api/config", data=data)
+    response = requests.post(url + "/api/config", data=data, verify=False)
     if response.status_code == 500:
         raise Exception('front-end failure')
 
@@ -133,7 +133,7 @@ def latency_figure(read_ratio=0.5):
     config('lru', 0)
     for request_number in request_numbers:
         no.append(latency_test(request_number, read_ratio))
-    df = pd.DataFrame(data={'requests': request_numbers, 'random': random, 'lru': lru, 'no': no}).set_index('requests')
+    df = pd.DataFrame(data={'requests': request_numbers, 'random': random, 'lru': lru, 'no memcache': no}).set_index('requests')
     sns.lineplot(data=df).get_figure().savefig('img/latency_' + str(read_ratio) + '.png')
 
 
@@ -158,7 +158,7 @@ def throughput_figure(read_ratio=0.5):
     config('lru', 0)
     for time_window in time_windows:
         no.append(throughput_test(time_window, read_ratio))
-    df = pd.DataFrame(data={'time_window': time_windows, 'random': random, 'lru': lru, 'no': no}).set_index('requests')
+    df = pd.DataFrame(data={'time_window': time_windows, 'random': random, 'lru': lru, 'no memcache': no}).set_index('time_window')
     sns.lineplot(data=df).get_figure().savefig('img/throughput_' + str(read_ratio) + '.png')
 
 
