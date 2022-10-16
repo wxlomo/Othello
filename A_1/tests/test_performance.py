@@ -124,10 +124,10 @@ def latency_figure(read_ratio=0.5):
           n/a
     """
     data = []
-    config('random', 3)
+    config('random', 1)
     for request_number in request_numbers:
         data.append([request_number, latency_test(request_number, read_ratio), 'random'])
-    config('lru', 3)
+    config('lru', 1)
     for request_number in request_numbers:
         data.append([request_number, latency_test(request_number, read_ratio), 'lru'])
     config('lru', 0)
@@ -149,10 +149,10 @@ def throughput_figure(read_ratio=0.5):
           n/a
     """
     data = []
-    config('random', 3)
+    config('random', 1)
     for time_window in time_windows:
         data.append([time_window, throughput_test(time_window, read_ratio), 'random'])
-    config('lru', 3)
+    config('lru', 1)
     for time_window in time_windows:
         data.append([time_window, throughput_test(time_window, read_ratio), 'lru'])
     config('lru', 0)
