@@ -250,7 +250,7 @@ def put_image():
     """
     image_file = request.files['image']
     key = request.form['key']
-    path = os.path.join('app/static/img/uploaded', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
+    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
     path = path.replace('\\', '/')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not is_image(image_file):
@@ -321,7 +321,7 @@ def put_image_api():
     """
     image_file = request.files['file']
     key = request.form['key']
-    path = os.path.join('app/static/img/uploaded', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
+    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
     path = path.replace('\\', '/')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
     if not key or len(key) > 100:
