@@ -24,7 +24,6 @@ def get_db():
     Returns:
       MySQLConnection: the connector to the available database.
     """
-    
     if 'db' not in g:
         g.db = mysql.connector.connect(
             user=dbconfig.db_config['user'],

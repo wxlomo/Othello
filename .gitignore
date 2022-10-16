@@ -3,3 +3,4 @@
 **/__pycache__
 **/img/*
 !**/img/index.jpg
+!**/img/test.jpg

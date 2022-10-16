@@ -8,37 +8,81 @@
 
 import requests
 import random
+import seaborn as sns
+import pandas as pd
 from time import time
 from matplotlib import pyplot as plt
-import seaborn as sns
 
 
-url = "http://54.226.158.76:5000/"
+url = "http://54.226.158.76:5000"
 key = list(range(0, 10))
+request_numbers = list(range(1, 102, 10))
+time_windows = [1.0, 2.0, 5.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0]
 
 
 def read_test():
+    """Send the http request to retrieve an image with a random key
+
+    Args:
+      n/a
+
+    Returns:
+      float: the seconds of latency to handle the request
+    """
     random_key = random.choice(key)
-    response = requests.post(url + "api/key/" + str(random_key))
+    response = requests.post(url + "/api/key/" + str(random_key))
     if response.status_code == 500:
         raise Exception('front-end failure')
     return response.elapsed.total_seconds()
 
 
 def write_test():
+    """Send the http request to upload an image with a random key
+
+    Args:
+      n/a
+
+    Returns:
+      float: the seconds of latency to handle the request
+    """
     random_key = random.choice(key)
-    image = open('test.jpg', 'rb')
+    image = open('img/test.jpg', 'rb')
     data = {'key': random_key}
     files = {'file': image}
-    response = requests.post(url + "api/upload", files=files, data=data)
+    response = requests.post(url + "/api/upload", files=files, data=data)
     if response.status_code == 500:
         raise Exception('front-end failure')
     return response.elapsed.total_seconds()
 
 
+def config(policy, capacity):
+    """Send the http request to upload an image with a random key
+
+    Args:
+      policy (str): the memcache eviction policy
+      capacity (int): the memcache size
+
+    Returns:
+      n/a
+    """
+    data = {'policy': policy, 'capacity': capacity, 'clear': 'yes'}
+    response = requests.post(url + "/api/config", data=data)
+    if response.status_code == 500:
+        raise Exception('front-end failure')
+
+
 def latency_test(request_number, read_ratio):
+    """Test the web application latency under certain request numbers
+
+    Args:
+      request_number (int): total number of requests that will be processed
+      read_ratio (int): the ratio of read requests in total requests
+
+    Returns:
+      float: the seconds of latency to handle the request
+    """
     total_latency = 0.0
-    for i in range(request_number):
+    for test_iter in range(request_number):
         if random.random() <= read_ratio:
             total_latency += read_test()
         else:
@@ -46,21 +90,78 @@ def latency_test(request_number, read_ratio):
     return total_latency / request_number
 
 
-def throughput_test(max_time, read_ratio):
+def throughput_test(time_window, read_ratio):
+    """Test the web application latency under certain time window
+
+    Args:
+      time_window (float): the length of time window for processing the requests
+      read_ratio (int): the ratio of read requests in total requests
+
+    Returns:
+      float: the seconds of latency to handle the request
+    """
     total_latency = 0.0
     total_request = 0
-    while total_latency < max_time:
+    while total_latency < time_window:
         if random.random() <= read_ratio:
             total_request += 1
             total_latency += read_test()
         else:
             total_request += 1
             total_latency += write_test()
-    return request_number
+    return total_request
 
 
+def latency_figure(read_ratio=0.5):
+    """Generate the latency trend figure for certain read_ratio
 
-print(latency_test(10, 0.2))
+        Args:
+          read_ratio (int): the ratio of read requests in total requests
+
+        Returns:
+          n/a
+        """
+    random = []
+    lru = []
+    no = []
+    config('random', 10)
+    for request_number in request_numbers:
+        random.append(latency_test(request_number, read_ratio))
+    config('lru', 10)
+    for request_number in request_numbers:
+        lru.append(latency_test(request_number, read_ratio))
+    config('lru', 0)
+    for request_number in request_numbers:
+        no.append(latency_test(request_number, read_ratio))
+    df = pd.DataFrame(data={'requests': request_numbers, 'random': random, 'lru': lru, 'no': no}).set_index('requests')
+    sns.lineplot(data=df).get_figure().savefig('img/latency_' + str(read_ratio) + '.png')
 
 
+def throughput_figure(read_ratio=0.5):
+    """Generate the latency trend figure for certain read_ratio
 
+        Args:
+          read_ratio (int): the ratio of read requests in total requests
+
+        Returns:
+          n/a
+        """
+    random = []
+    lru = []
+    no = []
+    config('random', 10)
+    for time_window in time_windows:
+        random.append(throughput_test(time_window, read_ratio))
+    config('lru', 10)
+    for time_window in time_windows:
+        lru.append(throughput_test(time_window, read_ratio))
+    config('lru', 0)
+    for time_window in time_windows:
+        no.append(throughput_test(time_window, read_ratio))
+    df = pd.DataFrame(data={'time_window': time_windows, 'random': random, 'lru': lru, 'no': no}).set_index('requests')
+    sns.lineplot(data=df).get_figure().savefig('img/throughput_' + str(read_ratio) + '.png')
+
+
+#latency_figure(0.2), latency_figure(0.5), latency_figure(0.8)
+throughput_figure(0.2), throughput_figure(0.5), throughput_figure(0.8)
+print('DONE.')
