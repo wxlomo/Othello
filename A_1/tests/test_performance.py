@@ -100,15 +100,15 @@ def throughput_test(time_window, read_ratio):
     Returns:
       float: the seconds of latency to handle the request
     """
-    start = time()
+    total_time = 0.0
     total_request = 0
-    while time() - start < time_window:
+    while total_time < time_window:
         if random.random() <= read_ratio:
             total_request += 1
-            total_latency += read_test()
+            total_time += read_test()
         else:
             total_request += 1
-            total_latency += write_test()
+            total_time += write_test()
     return total_request
 
 
