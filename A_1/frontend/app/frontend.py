@@ -161,9 +161,9 @@ def get_image():
     key = request.form['key']
     front.logger.debug('\n* Retrieving an image by key: ' + str(key))
     data = {'key': key}
-    response = requests.post("http://localhost:5001/get", data=data)
+    response = requests.post("http://localhost:5001/get", data=data)  # retrieve the image by key from memcache
     front.logger.debug(response.text)
-    if response.json() == 'Unknown key':
+    if response.json() == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
@@ -171,14 +171,14 @@ def get_image():
         for row in cursor:
             old_path = row[0]
         front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:
+        if not old_path:  # the key is either not in database
             return render_template('result.html', result='Your Key Is Invalid :(')
-        else:
+        else:  # the key is in database
             image = base64.b64encode(open(old_path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
-        response = requests.post("http://localhost:5001/put", data=data)
+        response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
         front.logger.debug(response.text)
-    else:
+    else:  # if in memcache
         image = response.json()
     return render_template('retrieve.html', image='data:image/*; base64, {0}'.format(image), key=escape(key))
 
@@ -217,9 +217,7 @@ def get_statistics():
     front.logger.debug('\n* Viewing statistics')
     cursor = db_wrapper('get_statistics')
     if not cursor:
-        
         return render_template('result.html', result='Something Wrong :(')
-    
     return render_template('statistics.html', cursor=cursor)
 
 
@@ -255,9 +253,9 @@ def put_image():
     if not is_image(image_file):
         return render_template('result.html', result='Input File Format Is Not Supported :(')
     data = {'key': key}
-    response = requests.post("http://localhost:5001/get", data=data)
+    response = requests.post("http://localhost:5001/get", data=data)  # retrieve the image by key from memcache
     front.logger.debug(response.text)
-    if response.json() == 'Unknown key':
+    if response.json() == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
@@ -265,20 +263,20 @@ def put_image():
         for row in cursor:
             old_path = row[0]
         front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:
-            cursor = db_wrapper('put_image', key, path)
-        else:
-            cursor = db_wrapper('put_image_exist', key, path)
-    else:
-        response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
+        if not old_path:  # the key is either not in database
+            cursor = db_wrapper('put_image', key, path)  # insert the key and path to database
+        else:  # the key is in database
+            cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
+    else:  # the key is in memcache
+        response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))  # invalidate the existed key
         front.logger.debug(response.text)
-        cursor = db_wrapper('put_image_exist', key, path)
+        cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     image_file.save(path)
     image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
     data = {'key': key, 'value': image}
-    response = requests.post("http://localhost:5001/put", data=data)
+    response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
     front.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
 
@@ -301,7 +299,7 @@ def put_config():
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     if request.form['clear'] == "yes":
-        response = requests.get("http://localhost:5001/clear")
+        response = requests.get("http://localhost:5001/clear")  # clear the cache
         front.logger.debug(response.text)
     response = requests.get("http://localhost:5001/refreshConfiguration")
     front.logger.debug(response.text)
@@ -323,7 +321,7 @@ def put_image_api():
     path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
     path = path.replace('\\', '/')
     front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
-    if not key or len(key) > 100:
+    if not key:
         return {
             'success': 'false',
             'error': {
@@ -339,7 +337,7 @@ def put_image_api():
                 'message': 'Bad Request: Input key is too long, it has to shorter than 100 characters.'
             }
         }
-    if not image_file or not is_image(image_file):
+    if not image_file:
         return {
             'success': 'false',
             'error': {
@@ -357,9 +355,9 @@ def put_image_api():
         }
     image_file.save(path)
     data = {'key': key}
-    response = requests.post("http://localhost:5001/get", data=data)
+    response = requests.post("http://localhost:5001/get", data=data)  # retrieve the image by key from memcache
     front.logger.debug(response.text)
-    if response.json() == 'Unknown key':
+    if response.json() == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return {
@@ -373,14 +371,14 @@ def put_image_api():
         for row in cursor:
             old_path = row[0]
         front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:
-            cursor = db_wrapper('put_image', key, path)
-        else:
-            cursor = db_wrapper('put_image_exist', key, path)
-    else:
-        response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))
+        if not old_path:  # the key is either not in database
+            cursor = db_wrapper('put_image', key, path)  # insert the key and path to database
+        else:  # the key is in database
+            cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
+    else:  # the key is in memcache
+        response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))  # invalidate the existed key
         front.logger.debug(response.text)
-        cursor = db_wrapper('put_image_exist', key, path)
+        cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
     if not cursor:
         return {
             'success': 'false',
@@ -391,7 +389,7 @@ def put_image_api():
         }
     image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
     data = {'key': key, 'value': image}
-    response = requests.post("http://localhost:5001/put", data=data)
+    response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
     front.logger.debug(response.text)
     return {
         'success': 'true',
@@ -451,9 +449,9 @@ def get_image_api(key_value):
     key = key_value
     front.logger.debug('\n* Retrieving an image by key: ' + str(key))
     data = {'key': key}
-    response = requests.post("http://localhost:5001/get", data=data)
+    response = requests.post("http://localhost:5001/get", data=data)  # retrieve the image by key from memcache
     front.logger.debug(response.text)
-    if response.json() == 'Unknown key':
+    if response.json() == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return {
@@ -467,7 +465,7 @@ def get_image_api(key_value):
         for row in cursor:
             old_path = row[0]
         front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:
+        if not old_path:  # the key is either not in database
             return {
                 'success': 'false',
                 'error': {
@@ -475,12 +473,12 @@ def get_image_api(key_value):
                     'message': 'Not Found: The given key is invalid.'
                 }
             }
-        else:
+        else:  # the key is in database
             image = base64.b64encode(open(old_path, 'rb').read()).decode('utf-8')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
         front.logger.debug(response.text)
-    else:
+    else:  # the key is in memcache
         image = response.json()
     return {
         'success': 'true',
@@ -511,7 +509,7 @@ def put_config_api():
                 'message': 'Internal Server Error: Fail in connecting to database'
             }
         }
-    if request.form['clear'] == "yes":
+    if request.form['clear'] == "yes":  # clear the cache
         response = requests.get("http://localhost:5001/clear")
         front.logger.debug(response.text)
     response = requests.get("http://localhost:5001/refreshConfiguration")
