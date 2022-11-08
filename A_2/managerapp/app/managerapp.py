@@ -66,7 +66,7 @@ def get_config():
     """
     
 
-    return render_template('config.html', poli='LRU', capa="50", pool='1')
+    return render_template('config.html', poli='LRU', capa="50", pool='1',minrate='15', maxrate='75', expand='1', shrink='1')
 
 
 
