@@ -11,4 +11,3 @@ awsKey={
 VPCID='vpc-042054f0f945d031c'
 SubnetID='subnet-0c43635379007a839'
 SecurityGroupID='sg-0bd84a8e573f6d497'
-instances={}

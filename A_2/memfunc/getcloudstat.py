@@ -2,7 +2,22 @@ import time
 import datetime
 from dateutil.tz import tzutc
 import boto3
-from .memcache.app import awsKey, instances, VPCID, SubnetID, SecurityGroupID
+instances={}
+
+
+db_config = {
+    'user': 'root',
+    'password': 'ece1779pass',
+    'host': '127.0.0.1',
+    'database': 'gallery'
+}
+awsKey={
+    'aws_access_key_id' : 'AKIA3NQ4GILKF3U7HZWT',
+    'aws_secret_access_key' : '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'
+}
+VPCID='vpc-042054f0f945d031c'
+SubnetID='subnet-0c43635379007a839'
+SecurityGroupID='sg-0bd84a8e573f6d497'
 ami = "ami-080ff70d8f5b80ba5"
 
 def getAggregateMissRate1mins(instances: list, intervals=60, period=60):

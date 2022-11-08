@@ -6,7 +6,9 @@ import threading
 import time
 from collections import OrderedDict
 from flask import request, g
-from . import mem, dbconfig, cloudwatch_config
+from . import mem
+import memfunc
+from memfunc import dbconfig, cloudwatch_config
 from flask import jsonify,json
 import boto3
 global cache
