@@ -1,0 +1,57 @@
+<!--
+ * index.html
+ * html code for the home page of the manager app
+ * Editor: Weixuan Yang, Haotian Chen
+ * Date: November 08, 2022
+-->
+
+{% extends "layout.html" %}
+{% block title %}Gallery Manager App{% endblock title %}
+{% block home %}active{% endblock home %}
+{% block bg %}style="background-image: url({{url_for('static', filename='img/index.jpg')}}); background-size: cover;"{% endblock bg %}
+{% block content %}
+<h1 class="cover-heading">Gallery Manager App</h1>
+<br>
+<div class = "table-responsive">
+    <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Instance</th>
+            <th scope="col">Miss Rate</th>
+            <th scope="col">Hit Rate</th>
+            <th scope="col">Num of Item</th>
+            <th scope="col">Total Size</th>
+            <th scope="col">Num of Request/Min</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">1</th>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+          </tr>
+          <tr>
+            <th scope="row">2</th>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+          </tr>
+          <tr>
+            <th scope="row">3</th>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+            <td>Dummy</td>
+          </tr>
+        </tbody>
+      </table>
+
+</div>
+
+{% endblock content %}
