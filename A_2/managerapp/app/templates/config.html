@@ -33,7 +33,7 @@
 
 
 <form method="post" enctype="multipart/form-data" action="/setAuto">
-    <p class="lead"><label>Automatic Mode Settings</label>
+    <p class="lead"><label>Automatic Mode Settings:</label>
     <p class="lead"><label>Set Max Miss Rate threshold to: </label>
     <input type="number" id="maxrate" style="width: 120px; color:black" name="capacity" value="{{maxrate}}" required>% </p>
     <p class="lead"><label>Set Min Miss Rate threshold to: </label>
@@ -44,4 +44,8 @@
     <input type="number" id="shrink" style="width: 120px; color:black" name="capacity" value="{{shrink}}" required> </p> 
     <p class="lead"><button type="submit" class="btn btn-default">Apply</button>
 </form>
+
+<p class="lead"><label>Cleaning:</label>
+<button class="btn btn-default" onclick='/deleteData'>Delete All App Data</button>
+<button class="btn btn-default" onclick='/clearMemcache'>Clear Memcache</button>
 {% endblock content %}

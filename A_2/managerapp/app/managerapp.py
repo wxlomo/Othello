@@ -139,6 +139,36 @@ def set_auto():
     response = requests.get("http://localhost:5001/setAuto")
     front.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
+  
+@front.route('/deleteData', methods=['POST'])
+def delete_data():
+    """Delete the data.
+
+    Args:
+      n/a
+
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    front.logger.debug('\n* Deleting data')
+    response = requests.get("http://localhost:5001/deleteData")
+    front.logger.debug(response.text)
+    return render_template('result.html', result='Your Request Has Been Processed :)')
+  
+@front.route('/clearMemcache', methods=['POST'])
+def clear_memcache():
+    """Clear the memcache.
+
+    Args:
+      n/a
+
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    front.logger.debug('\n* Clearing memcache')
+    response = requests.get("http://localhost:5001/clear")
+    front.logger.debug(response.text)
+    return render_template('result.html', result='Your Request Has Been Processed :)')
 ############################################################################################
 
 
