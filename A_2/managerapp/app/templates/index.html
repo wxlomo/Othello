@@ -13,7 +13,7 @@
 <h1 class="cover-heading">Gallery Manager App</h1>
 <br>
 <div class = "table-responsive">
-    <table class="table table-hover">
+    <table class="table">
         <thead>
           <tr>
             <th scope="col">Instances</th>
@@ -24,33 +24,17 @@
             <th scope="col">Requests/Min</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <th scope="row">1</th>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-          </tr>
-          <tr>
-            <th scope="row">2</th>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-          </tr>
-          <tr>
-            <th scope="row">3</th>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-            <td>Dummy</td>
-          </tr>
-        </tbody>
-      </table>
+        {% for row in cursor %}
+        <tr>
+            <td>{{row[0]}}</td>
+            <td>{{row[1]}}</td>
+            <td>{{row[2]}}</td>
+            <td>{{row[3]}}</td>
+            <td>{{row[4]}}</td>
+            <td>{{row[5]}}</td>
+        </tr>
+        {% endfor %}
+    </table>
 
 </div>
 
