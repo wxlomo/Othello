@@ -66,7 +66,7 @@ def get_config():
     """
     
 
-    return render_template('config.html', poli='LRU', capa="50")
+    return render_template('config.html', poli='LRU', capa="50", pool='1')
 
 
 
@@ -109,8 +109,37 @@ def put_config():
     front.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
 
+############################################################################################
+@front.route('/setManual', methods=['POST'])
+def set_manual():
+    """Set the manual mode.
 
+    Args:
+      n/a
 
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    front.logger.debug('\n* Setting manual mode')
+    response = requests.get("http://localhost:5001/setManual")
+    front.logger.debug(response.text)
+    return render_template('result.html', result='Your Request Has Been Processed :)')
+
+@front.route('/setAuto', methods=['POST'])
+def set_auto():
+    """Set the auto mode.
+
+    Args:
+      n/a
+
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    front.logger.debug('\n* Setting auto mode')
+    response = requests.get("http://localhost:5001/setAuto")
+    front.logger.debug(response.text)
+    return render_template('result.html', result='Your Request Has Been Processed :)')
+############################################################################################
 
 
 @front.route('/api/config', methods=['POST'])

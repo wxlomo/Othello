@@ -22,15 +22,14 @@
     <input type="number" id="capacity" style="width: 120px; color:black" name="capacity" value="{{capa}}" required> MB</p>
     <p class="lead"><button type="submit" class="btn btn-default">Confirm</button>
 </form>
-<form method="post" enctype="multipart/form-data" action="/putConfig">
-    
-    <p class="lead"><label for="policy">Current memcache policy is {{poli}}. Set to :</label>
-    <select id="policy" name="policy" style="width: 120px; color:black" >
-        <option value="lru">LRU</option>
-        <option value="random">RANDOM</option>
-    </select></p>
-    <p class="lead"><label for="capacity">Current cache capacity is {{capa}} MB. Set to: </label>
-    <input type="number" id="capacity" style="width: 120px; color:black" name="capacity" value="{{capa}}" required> MB</p>
-    <p class="lead"><button type="submit" class="btn btn-default">Confirm</button>
-</form>
+
+
+
+<p class="lead"><label for="policy">Current memcache pool size is {{pool}}.</label>
+    <p class="lead">
+        <button class="btn btn-default" onclick='/setManual'>Grow (+1)</button>
+        <button class="btn btn-default" onclick='/setManual'>Shrink (-1)</button>
+    </p>
+
+<p class="lead"><label for="policy">Automatic Mode Settings</label>
 {% endblock content %}
