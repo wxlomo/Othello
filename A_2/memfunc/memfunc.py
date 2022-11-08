@@ -34,7 +34,7 @@ def refreshStateandIP(client):
 
         # print(response)
         for i in response["Reservations"]:
-            if ami == i["Instances"][0]["ImageId"] and "Tags" in i["Instances"][0] and i["Instances"][0]["Tags"][0]["Value"].__contains__("ECE1779_A2_Memcache") and i["Instances"][0]["State"]["Name"] != 'terminated'and i["Instances"][0]["State"]["Name"] != 'shutting-down':
+            if ami == i["Instances"][0]["ImageId"] and "Tags" in i["Instances"][0] and i["Instances"][0]["Tags"][0]["Value"].__contains__("ECE1779_A2_Memcache") and i["Instances"][0]["State"]["Name"] != 'terminated' and i["Instances"][0]["State"]["Name"] != 'shutting-down':
                 
                 memcacheName = i["Instances"][0]["Tags"][0]["Value"]
                 memcacheNum = int(memcacheName[-1])
@@ -118,15 +118,19 @@ def start_ec2_instance():
             )
             
 
-            instances[str(number)] = {"Name": memcacheName,
-                                              "Status": new['Instances'][0]["State"]["Name"],
-                                              "instanceID": new['Instances'][0]['InstanceId'],
-                                              "amiID": ami,
-                                              "Number": number,
-                                              "PublicIP": ""}
+            instances[str(number)] =   {"Name": memcacheName,
+                                        "Status": new['Instances'][0]["State"]["Name"],
+                                        "instanceID": new['Instances'][0]['InstanceId'],
+                                        "amiID": ami,
+                                        "Number": number,
+                                        "PublicIP": ""}
             return True
         else:
-            print("Already has 8 memcaches. ")
+            for instance in instances.values():
+                if instance["Status"]=='stopping-down':
+                    print("Instance is stopping, retry after it is fullly stopped. ")
+                    return False
+            print("Already has 8 memcaches.")
             return False
 
 
@@ -142,7 +146,7 @@ def stop_ec2_instance():
                             aws_secret_access_key=awsKey.aws_secret_access_key)
             if not refreshStateandIP(client):
                 print("Fail retirving state form aws. Abandoning operation.")
-                return "Fail retirving state form aws. Abandoning operation."
+                return "ERROR! Fail retirving state form aws. Abandoning operation."
             # Check what is the last num
             id = -1
             for instance in instances.values():
