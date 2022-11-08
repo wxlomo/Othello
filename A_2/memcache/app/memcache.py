@@ -8,7 +8,7 @@ from collections import OrderedDict
 from flask import request, g
 from . import mem
 import memfunc
-from memfunc import dbconfig, cloudwatch_config
+from memfunc import dbconfig, awsKey
 from flask import jsonify,json
 import boto3
 global cache
