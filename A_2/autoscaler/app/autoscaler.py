@@ -32,11 +32,15 @@ def updatestat():
             num=num_running()
             if missrate>MAXMISS:
                 new=max(8,int(num*EXPAND))
+                if new<8 and new==num:
+                    new+=1
                 add=new-num
                 for i in range(add):
                     start_ec2_instance()
             elif missrate<MINMISS:
                 new=max(1,int(num*SHRINK))
+                if new>1 and new==num:
+                    new-=1
                 add=num-new
                 for i in range(add):
                     stop_ec2_instance()
