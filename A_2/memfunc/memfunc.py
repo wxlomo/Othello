@@ -77,50 +77,52 @@ def init_ec2_instances():
             client.start_instances(InstanceIds=[instance["instanceID"]])
             
     
-    # Create instance if no available instance and have not reach maximum memcaches (8):
-    if (len(instances) < 8):
-        print("Creating EC2 instance...")
-        
-        # Check what is the latest num
+    # Create instance instance and have not reach maximum memcaches (8):
+    
+    
 
         
-        memcacheName = ("ECE1779_A2_Memcache_" +
-                        str(0))
-        for i in range(8):
-            if str(i) not in instances.keys():
-                
-                memcacheName = ("ECE1779_A2_Memcache_" +
-                                str(i))
-
-
-                new = client.run_instances(
-
-                    ImageId=ami,
-                    MinCount=1,
-                    MaxCount=1,
-                    InstanceType="t2.micro",
-                    KeyName="ECE1779_A2_public",
-                    SecurityGroupIds=[SecurityGroupID],
-                    SubnetId=SubnetID,
-                    TagSpecifications=[{'ResourceType': 'instance',
-                                        'Tags': [
-                                            {
-                                                'Key': 'Name',
-                                                'Value': memcacheName
-                                            },
-                                        ]
-                                        }]
-
-                )
-                
-
-                instances[str(i)] =   {"Name": memcacheName,
-                                            "Status": new['Instances'][0]["State"]["Name"],
-                                            "instanceID": new['Instances'][0]['InstanceId'],
-                                            "amiID": ami,
-                                            "Number": i,
-                                            "PublicIP": ""}
+    memcacheName = ("ECE1779_A2_Memcache_" +
+                    str(0))
+    for i in range(8):
+        if str(i) not in instances.keys():
             
+            memcacheName = ("ECE1779_A2_Memcache_" +
+                            str(i))
+
+
+            new = client.run_instances(
+
+                ImageId=ami,
+                MinCount=1,
+                MaxCount=1,
+                InstanceType="t2.micro",
+                KeyName="ECE1779_A2_public",
+                SecurityGroupIds=[SecurityGroupID],
+                SubnetId=SubnetID,
+                TagSpecifications=[{'ResourceType': 'instance',
+                                    'Tags': [
+                                        {
+                                            'Key': 'Name',
+                                            'Value': memcacheName
+                                        },
+                                    ]
+                                    }]
+
+            )
+            
+
+            instances[str(i)] =   {"Name": memcacheName,
+                                        "Status": new['Instances'][0]["State"]["Name"],
+                                        "instanceID": new['Instances'][0]['InstanceId'],
+                                        "amiID": ami,
+                                        "Number": i,
+                                        "PublicIP": ""}
+    for i in range(8):
+        while instances[str(i)]["Status"]!="running" and instances[str(i)]["PublicIP"] != "":
+            refreshStateandIP(client) 
+        address="http://"+str(instances[str(i)]["PublicIP"])+":5001/memIndex/"+str(i)
+        response = requests.get(address)          
         
     return True
     
@@ -187,9 +189,9 @@ def get_nth_ip(n):
     if not refreshStateandIP():
         print("Fail retirving state form aws. Abandoning operation.")
         return
-    if instances[str(n)]["Status"]=="running" and instances[str(n)]["Activate"]=="True":
+    if instances[str(n)]["Status"]=="running" and instances[str(n)]["Activate"]=="True"and instances[str(n)]["PublicIP"] != "":
         return instances[str(n)]["PublicIP"]
-
+    return "Error! Failed retrive ip"
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
@@ -197,7 +199,7 @@ def num_running():
             break
     return int(i)+1
 
-def getAggregateMissRate1mins(instances: list, intervals=60, period=60):
+def getAggregateMissRate1mins(intervals=60, period=60):
     client = boto3.client('cloudwatch', 
                             region_name='us-east-1',
                             aws_access_key_id=awsKey.aws_access_key_id,
@@ -206,7 +208,7 @@ def getAggregateMissRate1mins(instances: list, intervals=60, period=60):
     endTime = datetime.datetime.utcnow()
     miss = 0
     total= 0
-    for i in instances:
+    for i in range(8):
         
         miss+=client.get_metric_statistics(
                 Namespace='ece1779/memcache',
@@ -250,12 +252,12 @@ def getAggregateStat30Mins(instances: list):
                         aws_access_key_id=awsKey.aws_access_key_id,
                         aws_secret_access_key=awsKey.aws_secret_access_key)
     now=datetime.datetime.utcnow()
-    for i in range (30,1,-1):
+    for j in range (30,1,-1):
         startTime = now - datetime.timedelta(minutes=i)
         endTime = now - datetime.timedelta(minutes=i-1)
         miss = 0
         total= 0
-        for i in instances:
+        for i in range(8):
             
             miss+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
