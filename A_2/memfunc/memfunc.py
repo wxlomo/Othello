@@ -9,7 +9,7 @@ from config import awsKey
 class Memcache():
     def __init__(self):
         self.instances = {}
-        self.amiID = ami = "ami-080ff70d8f5b80ba5" 
+        self.ami = "ami-080ff70d8f5b80ba5" 
         self.awsKey=awsKey
         self.VPCID='vpc-042054f0f945d031c'
         self.SubnetID='subnet-0c43635379007a839'
