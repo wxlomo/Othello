@@ -117,6 +117,10 @@ def init_ec2_instances():
         
     return True
     
+    
+    
+# @manager.route('/start') 
+
 def start_ec2_instance():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
@@ -127,7 +131,7 @@ def start_ec2_instance():
             return("Alreade 8 memcache running")
     
     
-        
+# @manager.route('/stop')       
 def stop_ec2_instance():
     for i in range(7):
         if instances[str(i)]["Activate"]=='True' and self.instances[str(i+1)]["Activate"]=='False':
@@ -164,6 +168,7 @@ def end_ec2_instances():
         
     return "OK"
 
+# @manager.route('/allip') 
 def get_all_ip():
     """Returns all known IPs of all EC2 memcaches for frontend to use."""
     ipList = []
@@ -176,6 +181,7 @@ def get_all_ip():
                 ipList.append(instance["PublicIP"])
     return ipList
 
+# @manager.route('/ip/<n>') 
 def get_nth_ip(n):
     if not refreshStateandIP():
         print("Fail retirving state form aws. Abandoning operation.")
@@ -183,6 +189,8 @@ def get_nth_ip(n):
     if instances[str(n)]["Status"]=="running" and instances[str(n)]["Activate"]=="True"and instances[str(n)]["PublicIP"] != "":
         return instances[str(n)]["PublicIP"]
     return "Error! Failed retrive ip"
+
+# @manager.route('/numrunning') 
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
@@ -194,7 +202,7 @@ def num_running():
 
 
 
-
+# @manager.route('/1minmiss') 
 def getAggregateMissRate1mins(intervals=60, period=60):
     client = boto3.client('cloudwatch', 
                             region_name='us-east-1',
