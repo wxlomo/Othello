@@ -188,9 +188,8 @@ class Memcache():
     def num_running(self):
         for i in range(8):
             if self.instances[str(i)]["Activate"]=='False':
-                self.instances[str(i)]["Activate"]='False'
                 break
-        return int(i)+1
+        return int(i)
 
 
 

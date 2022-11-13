@@ -16,15 +16,12 @@ def refreshStateandIP(client):
     """
         Refresh instacne with current state from AWS.
     """
-    # client = boto3.client('ec2', 
-    #                     region_name='us-east-1',
-    #                     aws_access_key_id=awsKey.aws_access_key_id,
-    #                     aws_secret_access_key=awsKey.aws_secret_access_key)
+
     response = client.describe_instances()
     instances.clear()
 
 
-    # print(response)
+
     for i in response["Reservations"]:
         if ami == i["Instances"][0]["ImageId"] and "Tags" in i["Instances"][0] and i["Instances"][0]["Tags"][0]["Value"].__contains__("ECE1779_A2_Memcache") and i["Instances"][0]["State"]["Name"] != 'terminated' and i["Instances"][0]["State"]["Name"] != 'shutting-down':
             
@@ -70,9 +67,6 @@ def init_ec2_instances():
     
     # Create instance instance and have not reach maximum memcaches (8):
     
-    
-
-        
     memcacheName = ("ECE1779_A2_Memcache_" +
                     str(0))
     for i in range(8):
@@ -194,9 +188,9 @@ def get_nth_ip(n):
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
-            instances[str(i)]["Activate"]='False'
+            
             break
-    return int(i)+1
+    return int(i)
 
 
 
