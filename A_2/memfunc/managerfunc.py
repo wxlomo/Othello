@@ -56,8 +56,8 @@ def init_ec2_instances():
 
     client = boto3.client('ec2', 
                         region_name='us-east-1',
-                        aws_access_key_id=self.awsKey.aws_access_key_id,
-                        aws_secret_access_key=self.awsKey.aws_secret_access_key)
+                        aws_access_key_id=awsKey.aws_access_key_id,
+                        aws_secret_access_key=awsKey.aws_secret_access_key)
     if not refreshStateandIP(client):
         print("Fail retirving state form aws. Abandoning operation.")
         return False
@@ -84,13 +84,13 @@ def init_ec2_instances():
 
             new = client.run_instances(
 
-                ImageId=self.ami,
+                ImageId=ami,
                 MinCount=1,
                 MaxCount=1,
                 InstanceType="t2.micro",
                 KeyName="ECE1779_A2_public",
-                SecurityGroupIds=[self.SecurityGroupID],
-                SubnetId=self.SubnetID,
+                SecurityGroupIds=[SecurityGroupID],
+                SubnetId=SubnetID,
                 TagSpecifications=[{'ResourceType': 'instance',
                                     'Tags': [
                                         {
@@ -106,20 +106,20 @@ def init_ec2_instances():
             instances[str(i)] =   {"Name": memcacheName,
                                         "Status": new['Instances'][0]["State"]["Name"],
                                         "instanceID": new['Instances'][0]['InstanceId'],
-                                        "amiID": self.ami,
+                                        "amiID": ami,
                                         "Number": i,
                                         "PublicIP": ""}
     for i in range(8):
-        while instances[str(i)]["Status"]!="running" and self.instances[str(i)]["PublicIP"] != "":
+        while instances[str(i)]["Status"]!="running" and instances[str(i)]["PublicIP"] != "":
             refreshStateandIP(client) 
-        address="http://"+str(self.instances[str(i)]["PublicIP"])+":5001/memIndex/"+str(i)
+        address="http://"+str(instances[str(i)]["PublicIP"])+":5001/memIndex/"+str(i)
         response = requests.get(address)          
         
     return True
     
     
     
-# @manager.route('/start') 
+# @manager.route('/start')  run this func
 
 def start_ec2_instance():
     for i in range(8):
@@ -131,10 +131,10 @@ def start_ec2_instance():
             return("Alreade 8 memcache running")
     
     
-# @manager.route('/stop')       
+# @manager.route('/stop')       run this func
 def stop_ec2_instance():
     for i in range(7):
-        if instances[str(i)]["Activate"]=='True' and self.instances[str(i+1)]["Activate"]=='False':
+        if instances[str(i)]["Activate"]=='True' and instances[str(i+1)]["Activate"]=='False':
             instances[str(i)]["Activate"]='False'
             break
         elif i==6:
@@ -168,7 +168,7 @@ def end_ec2_instances():
         
     return "OK"
 
-# @manager.route('/allip') 
+# @manager.route('/allip') response the return of this func
 def get_all_ip():
     """Returns all known IPs of all EC2 memcaches for frontend to use."""
     ipList = []
@@ -181,7 +181,7 @@ def get_all_ip():
                 ipList.append(instance["PublicIP"])
     return ipList
 
-# @manager.route('/ip/<n>') 
+# @manager.route('/ip/<n>')  response the return of this func
 def get_nth_ip(n):
     if not refreshStateandIP():
         print("Fail retirving state form aws. Abandoning operation.")
@@ -190,7 +190,7 @@ def get_nth_ip(n):
         return instances[str(n)]["PublicIP"]
     return "Error! Failed retrive ip"
 
-# @manager.route('/numrunning') 
+# @manager.route('/numrunning')  response the return of this func
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
@@ -202,7 +202,7 @@ def num_running():
 
 
 
-# @manager.route('/1minmiss') 
+# @manager.route('/1minmiss')  response the return of this func
 def getAggregateMissRate1mins(intervals=60, period=60):
     client = boto3.client('cloudwatch', 
                             region_name='us-east-1',
