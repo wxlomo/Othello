@@ -1,18 +1,16 @@
 import time
 import datetime
-from dateutil.tz import tzutc
 import boto3
 import requests
+import config
+from config import awsKey
 
 
 class Memcache():
     def __init__(self):
         self.instances = {}
         self.amiID = ami = "ami-080ff70d8f5b80ba5" 
-        self.awsKey={
-            'aws_access_key_id' : 'AKIA3NQ4GILKF3U7HZWT',
-            'aws_secret_access_key' : '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'
-        }
+        self.awsKey=awsKey
         self.VPCID='vpc-042054f0f945d031c'
         self.SubnetID='subnet-0c43635379007a839'
         self.SecurityGroupID='sg-0bd84a8e573f6d497'
@@ -198,13 +196,63 @@ class Memcache():
 
 
 
-    def getAggregateMissRate1mins(self,intervals=60, period=60):
-        client = boto3.client('cloudwatch', 
-                                region_name='us-east-1',
-                                aws_access_key_id=self.awsKey.aws_access_key_id,
-                                aws_secret_access_key=self.awsKey.aws_secret_access_key)
-        startTime = datetime.datetime.utcnow() - datetime.timedelta(seconds=intervals)
-        endTime = datetime.datetime.utcnow()
+
+def getAggregateMissRate1mins(intervals=60, period=60):
+    client = boto3.client('cloudwatch', 
+                            region_name='us-east-1',
+                            aws_access_key_id=awsKey.aws_access_key_id,
+                            aws_secret_access_key=awsKey.aws_secret_access_key)
+    startTime = datetime.datetime.utcnow() - datetime.timedelta(seconds=intervals)
+    endTime = datetime.datetime.utcnow()
+    miss = 0
+    total= 0
+    for i in range(8):
+        
+        miss+=client.get_metric_statistics(
+                Namespace='ece1779/memcache',
+                MetricName='miss',
+                Dimensions=[{
+                        "Name": "instance",
+                        "Value": i
+                    }],
+                StartTime = startTime,
+                EndTime = endTime,
+                Period=period,
+                Statistics=['Sum'],
+                Unit='Count',
+                )['Datapoints']['Sum']
+        
+        total+=client.get_metric_statistics(
+                Namespace='ece1779/memcache',
+                MetricName='total',
+                Dimensions=[{
+                        "Name": "instance",
+                        "Value": i
+                    }],
+                StartTime = startTime,
+                EndTime = endTime,
+                Period=period,
+                Statistics=['Sum'],
+                Unit='Count',
+                )['Datapoints']['Sum']
+            
+    return miss/total
+    
+    
+def getAggregateStat30Mins():
+    numberItems=[]
+    currentSize=[]
+    totalRequests=[]
+    missRate=[]
+    hitRate=[]
+    client = boto3.client('cloudwatch', 
+                        region_name='us-east-1',
+                        aws_access_key_id=awsKey.aws_access_key_id,
+                        aws_secret_access_key=awsKey.aws_secret_access_key)
+    now=datetime.datetime.utcnow()
+    for j in range (30,1,-1):
+        startTime = now - datetime.timedelta(minutes=i)
+        endTime = now - datetime.timedelta(minutes=i-1)
         miss = 0
         total= 0
         for i in range(8):
@@ -218,7 +266,7 @@ class Memcache():
                         }],
                     StartTime = startTime,
                     EndTime = endTime,
-                    Period=period,
+                    Period=60,
                     Statistics=['Sum'],
                     Unit='Count',
                     )['Datapoints']['Sum']
@@ -232,102 +280,53 @@ class Memcache():
                         }],
                     StartTime = startTime,
                     EndTime = endTime,
-                    Period=period,
+                    Period=60,
                     Statistics=['Sum'],
                     Unit='Count',
                     )['Datapoints']['Sum']
-                
-        return miss/total
-        
-        
-    def getAggregateStat30Mins(self):
-        numberItems=[]
-        currentSize=[]
-        totalRequests=[]
-        missRate=[]
-        hitRate=[]
-        client = boto3.client('cloudwatch', 
-                            region_name='us-east-1',
-                            aws_access_key_id=self.awsKey.aws_access_key_id,
-                            aws_secret_access_key=self.awsKey.aws_secret_access_key)
-        now=datetime.datetime.utcnow()
-        for j in range (30,1,-1):
-            startTime = now - datetime.timedelta(minutes=i)
-            endTime = now - datetime.timedelta(minutes=i-1)
-            miss = 0
-            total= 0
-            for i in range(8):
-                
-                miss+=client.get_metric_statistics(
-                        Namespace='ece1779/memcache',
-                        MetricName='miss',
-                        Dimensions=[{
-                                "Name": "instance",
-                                "Value": i
-                            }],
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Period=60,
-                        Statistics=['Sum'],
-                        Unit='Count',
-                        )['Datapoints']['Sum']
-                
-                total+=client.get_metric_statistics(
-                        Namespace='ece1779/memcache',
-                        MetricName='total',
-                        Dimensions=[{
-                                "Name": "instance",
-                                "Value": i
-                            }],
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Period=60,
-                        Statistics=['Sum'],
-                        Unit='Count',
-                        )['Datapoints']['Sum']
-                
-                numItem=client.get_metric_statistics(
-                        Namespace='ece1779/memcache',
-                        MetricName='numberItems',
-                        Dimensions=[{
-                                "Name": "instance",
-                                "Value": i
-                            }],
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Period=60,
-                        Statistics=['Average'],
-                        Unit='Count',
-                        )['Datapoints']['Average']
-                
-                size=client.get_metric_statistics(
-                        Namespace='ece1779/memcache',
-                        MetricName='currentSize',
-                        Dimensions=[{
-                                "Name": "instance",
-                                "Value": i
-                            }],
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Period=60,
-                        Statistics=['Average'],
-                        Unit='Count',
-                        )['Datapoints']['Average']
-                    
-            missRate.append(miss/total)
-            hitRate.append(1-miss/total)
-            totalRequests.append(total)
-            numberItems.append(numItem)
-            currentSize.append(size)
-        return [numberItems, currentSize, totalRequests, missRate, hitRate]
             
-
+            numItem=client.get_metric_statistics(
+                    Namespace='ece1779/memcache',
+                    MetricName='numberItems',
+                    Dimensions=[{
+                            "Name": "instance",
+                            "Value": i
+                        }],
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    Period=60,
+                    Statistics=['Average'],
+                    Unit='Count',
+                    )['Datapoints']['Average']
             
+            size=client.get_metric_statistics(
+                    Namespace='ece1779/memcache',
+                    MetricName='currentSize',
+                    Dimensions=[{
+                            "Name": "instance",
+                            "Value": i
+                        }],
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    Period=60,
+                    Statistics=['Average'],
+                    Unit='Count',
+                    )['Datapoints']['Average']
+                
+        missRate.append(miss/total)
+        hitRate.append(1-miss/total)
+        totalRequests.append(total)
+        numberItems.append(numItem)
+        currentSize.append(size)
+    return [numberItems, currentSize, totalRequests, missRate, hitRate]
+        
 
         
-        
-        
-        
-        
 
-            
+    
+    
+    
+    
+    
+
+        
