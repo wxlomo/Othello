@@ -172,7 +172,7 @@ def threadedUpdate():
 def updatestat():
     while True:
         time.sleep(5)
-        statistic()
+        statistic5secs()
 
 
 @mem.route('/clear')
@@ -259,7 +259,7 @@ def refreshConfiguration():
 @mem.route('/get', methods=['POST'])
 # send the image retrieved from the given key to the frontend
 def get():
-    # t = datetime.datetime.now()
+    t = datetime.datetime.now()
     # memcacheStatistics.addRequestTime(t)
 
     key = request.form.get('key')
