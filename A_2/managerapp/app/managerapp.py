@@ -67,7 +67,7 @@ def draw_charts(stats:list, y_label:str, title:str):
     return src
     
 
-@front.route('/')
+@manager.route('/')
 def get_home():
     """Home page render.
 
@@ -92,7 +92,7 @@ def get_home():
 
 
 
-@front.route('/config')
+@manager.route('/config')
 def get_config():
     """Configuration page render.
 
@@ -108,7 +108,7 @@ def get_config():
 
 
 
-@front.route('/about')
+@manager.route('/about')
 def get_about():
     """About page render.
 
@@ -118,12 +118,12 @@ def get_about():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Viewing about')
+    manager.logger.debug('\n* Viewing about')
     return render_template('about.html')
 
 
 
-@front.route('/putConfig', methods=['POST'])
+@manager.route('/putConfig', methods=['POST'])
 def put_config():
     """Commit the changes in configurations.
 
@@ -136,19 +136,19 @@ def put_config():
     
     policy = request.form['policy']
     capacity = request.form['capacity']
-    front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    manager.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     cursor = db_wrapper('put_config', policy, capacity)
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
     if request.form['clear'] == "yes":
         response = requests.get("http://localhost:5001/clear")  # clear the cache
-        front.logger.debug(response.text)
+        manager.logger.debug(response.text)
     response = requests.get("http://localhost:5001/refreshConfiguration")
-    front.logger.debug(response.text)
+    manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
 
 ############################################################################################
-@front.route('/setManual', methods=['POST'])
+@manager.route('/setManual', methods=['POST'])
 def set_manual():
     """Set the manual mode.
 
@@ -158,12 +158,12 @@ def set_manual():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Setting manual mode')
+    manager.logger.debug('\n* Setting manual mode')
     response = requests.get("http://localhost:5001/setManual")
-    front.logger.debug(response.text)
+    manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
 
-@front.route('/setAuto', methods=['POST'])
+@manager.route('/setAuto', methods=['POST'])
 def set_auto():
     """Set the auto mode.
 
@@ -173,12 +173,12 @@ def set_auto():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Setting auto mode')
+    manager.logger.debug('\n* Setting auto mode')
     response = requests.get("http://localhost:5001/setAuto")
-    front.logger.debug(response.text)
+    manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
-@front.route('/deleteData', methods=['POST'])
+@manager.route('/deleteData', methods=['POST'])
 def delete_data():
     """Delete the data.
 
@@ -188,12 +188,12 @@ def delete_data():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Deleting data')
+    manager.logger.debug('\n* Deleting data')
     response = requests.get("http://localhost:5001/deleteData")
-    front.logger.debug(response.text)
+    manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
-@front.route('/clearMemcache', methods=['POST'])
+@manager.route('/clearMemcache', methods=['POST'])
 def clear_memcache():
     """Clear the memcache.
 
@@ -203,14 +203,14 @@ def clear_memcache():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Clearing memcache')
+    manager.logger.debug('\n* Clearing memcache')
     response = requests.get("http://localhost:5001/clear")
-    front.logger.debug(response.text)
+    manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
 ############################################################################################
 
 
-@front.route('/api/config', methods=['POST'])
+@manager.route('/api/config', methods=['POST'])
 def put_config_api():
     """The api to commit the changes in configurations.
 
@@ -223,7 +223,7 @@ def put_config_api():
 
     policy = request.form['policy']
     capacity = request.form['capacity']
-    front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
+    manager.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
     cursor = db_wrapper('put_config', policy, capacity)
     if not cursor:
         return {
@@ -235,9 +235,9 @@ def put_config_api():
         }
     if request.form['clear'] == "yes":  # clear the cache
         response = requests.get("http://localhost:5001/clear")
-        front.logger.debug(response.text)
+        manager.logger.debug(response.text)
     response = requests.get("http://localhost:5001/refreshConfiguration")
-    front.logger.debug(response.text)
+    manager.logger.debug(response.text)
     return {
         'success': 'true'
     }
