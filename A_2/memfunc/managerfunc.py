@@ -42,7 +42,7 @@ def refreshStateandIP(client):
     
     return True
         
-#use before manager first request
+#use before manager first request @manager.before_first_request
 def init_ec2_instances():
     """
         MaxCount=1, # Keep the max count to 1, unless you have a requirement to increase it
