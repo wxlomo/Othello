@@ -42,7 +42,7 @@ def refreshStateandIP(client):
     
     return True
         
-
+#use before manager first request
 def init_ec2_instances():
     """
         MaxCount=1, # Keep the max count to 1, unless you have a requirement to increase it
@@ -139,7 +139,7 @@ def stop_ec2_instance():
     ip=get_nth_ip(i)
     address="http://"+str(ip)+":5001/clear"
     response = requests.get(address)            
-
+#use when manager end
 def end_ec2_instances():
     """
         Stop memcache with the LARGEST number.
@@ -162,7 +162,7 @@ def end_ec2_instances():
         
     return "OK"
 
-
+# use to update memcache config
 def get_all_ip():
     """Returns all known IPs of all EC2 memcaches for frontend to use."""
     ipList = []
