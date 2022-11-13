@@ -321,7 +321,14 @@ def getAggregateStat30Mins(instances: list):
         numberItems.append(numItem)
         currentSize.append(size)
     return [numberItems, currentSize, totalRequests, missRate, hitRate]
-          
+
+def test1():
+    l1=[1,2,3,4,5,6,7,8,9,10]
+    l2=[1,2,3,4,5,6,7,8,9,10]
+    l3=[1,2,3,4,5,6,7,8,9,10]
+    l4=[1,2,3,4,5,6,7,8,9,10]
+    l5=[1,2,3,4,5,6,7,8,9,10]
+    return [l1,l2,l3,l4,l5]      
 
         
 

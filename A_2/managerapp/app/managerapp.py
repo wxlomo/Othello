@@ -6,13 +6,22 @@
  * Date: Nov. 8, 2022
 """
 
-from . import front, dbconfig
-from flask import render_template, request, g, escape
-from werkzeug.utils import secure_filename
-import mysql.connector
-import os
-import requests
+
 import base64
+from io import BytesIO
+import os
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import mysql.connector
+import requests
+import memfunc
+from memfunc import test2
+from flask import escape, g, render_template, request
+from werkzeug.utils import secure_filename
+
+from . import dbconfig, manager
 
 
 def get_db():
@@ -34,8 +43,29 @@ def get_db():
     return g.db
 
 
+def draw_charts(stats:list, y_label:str, title:str):
+    """Draw the charts for the statistics.
 
+    Args:
+      stats (list): the list of statistics.
 
+    Returns:
+      n/a
+    """
+    # draw the charts
+    x1 = [x for x in range(10)]
+    print(x1, stats)
+    l1 = plt.plot(x1, stats, 'r')
+    plt.xlabel('Time')
+    plt.ylabel(y_label)
+    plt.title(title)
+    sio = BytesIO()
+    plt.savefig(sio, format='png')
+    data = base64.encodebytes(sio.getvalue()).decode()
+    src = 'data:image/png;base64,{}'.format(data)
+    plt.close()
+    return src
+    
 
 @front.route('/')
 def get_home():
@@ -47,7 +77,15 @@ def get_home():
     Returns:
       str: the arguments for the Jinja template
     """
-    return render_template('index.html')
+    y_label = ['missRate', 'hitRate', 'numberItems', 'currentSize', 'totalRequests']
+    title = ['missRate', 'hitRate', 'numberItems', 'currentSize', 'totalRequests']
+    stats = test1()
+  
+    for i in range(len(stats)):
+        
+        test2=(draw_charts(stats[i], y_label[i], title[i]))
+        
+    return render_template('index.html', src=test2)
 
 
 

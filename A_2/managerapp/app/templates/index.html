@@ -13,29 +13,13 @@
 <h1 class="cover-heading">Gallery Manager App</h1>
 <br>
 <div class = "table-responsive">
-    <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Instances</th>
-            <th scope="col">Miss Rate(%)</th>
-            <th scope="col">Hit Rate(%)</th>
-            <th scope="col">Num of Item</th>
-            <th scope="col">Total Size(MB)</th>
-            <th scope="col">Requests/Min</th>
-          </tr>
-        </thead>
-        {% for row in cursor %}
-        <tr>
-            <td>{{row[0]}}</td>
-            <td>{{row[1]}}</td>
-            <td>{{row[2]}}</td>
-            <td>{{row[3]}}</td>
-            <td>{{row[4]}}</td>
-            <td>{{row[5]}}</td>
-        </tr>
-        {% endfor %}
-    </table>
-
+    
+    <img src="{{src}}">
+    <img src="{{src}}">
+    <img src="{{src}}">
+    <img src="{{src}}">
+    <img src="{{src}}">
+    <img src="{{src}}">
 </div>
 
 {% endblock content %}

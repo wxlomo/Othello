@@ -7,6 +7,6 @@
 """
 from flask import Flask
 
-front = Flask(__name__)
+manager = Flask(__name__)
 
 from . import managerapp
