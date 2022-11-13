@@ -162,7 +162,7 @@ def end_ec2_instances():
         
     return "OK"
 
-# @manager.route('/allip') response the return of this func
+
 def get_all_ip():
     """Returns all known IPs of all EC2 memcaches for frontend to use."""
     ipList = []
