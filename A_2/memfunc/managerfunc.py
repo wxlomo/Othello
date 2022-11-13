@@ -171,7 +171,7 @@ def get_all_ip():
         return
     if instances:
         for instance in instances.values():
-            if instance["Status"]=="running" and instance["Activate"]=="True" and instance["PublicIP"] != "":
+            if instance["Status"]=="running"  and instance["PublicIP"] != "": #and instance["Activate"]=="True"
                 ipList.append(instance["PublicIP"])
     return ipList
 
