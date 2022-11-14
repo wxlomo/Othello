@@ -9,4 +9,4 @@ from flask import Flask
 
 manager = Flask(__name__)
 
-from . import managerapp
+from . import managerapp, managerfunc, config

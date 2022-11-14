@@ -8,40 +8,27 @@
 
 
 import base64
-from io import BytesIO
 import os
+from io import BytesIO
 
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import mysql.connector
 import requests
-
-from flask import escape, g, render_template, request
+from flask import escape, g, jsonify, render_template, request
 from werkzeug.utils import secure_filename
 
-from . import manager
+from . import manager, managerfunc
 
-
-def get_db():
-    """Establish the connection to the database.
-
-    Args:
-      n/a
-
-    Returns:
-      MySQLConnection: the connector to the available database.
-    """
-    if 'db' not in g:
-        g.db = mysql.connector.connect(
-            user=dbconfig.db_config['user'],
-            password=dbconfig.db_config['password'],
-            host=dbconfig.db_config['host'],
-            database=dbconfig.db_config['database']
-        )
-    return g.db
-
-
+#variables
+policy = 'lru'
+capacity= 4
+minrate='15' 
+maxrate='75' 
+expand='1' 
+shrink='1'
 def draw_charts(stats:list, y_label:str, title:str):
     """Draw the charts for the statistics.
 
@@ -49,16 +36,17 @@ def draw_charts(stats:list, y_label:str, title:str):
       stats (list): the list of statistics.
 
     Returns:
-      n/a
+      encoded_img (str): the encoded image of the chart.
     """
     # draw the charts
-    x1 = [x for x in range(10)]
+    x1 = [x for x in range(len(stats))]
     l1 = plt.plot(x1, stats, 'r')
     plt.xlabel('Time')
     plt.ylabel(y_label)
     plt.title(title)
     sio = BytesIO()
     plt.savefig(sio, format='png')
+    #base64encode
     data = base64.encodebytes(sio.getvalue()).decode()
     src = 'data:image/png;base64,{}'.format(data)
     plt.close()
@@ -75,20 +63,22 @@ def get_home():
     Returns:
       str: the arguments for the Jinja template
     """
-    y_label = ['missRate', 'hitRate', 'numberItems', 'currentSize', 'totalRequests']
-    title = ['missRate', 'hitRate', 'numberItems', 'currentSize', 'totalRequests']
-    stat1 = [x for x in range(10)]
-    stat2 = [2*x for x in range(10)]
-    stat3 = [3*x for x in range(10)]
-    stat4 = [4*x for x in range(10)]
-    stat5 = [5*x for x in range(10)]
-    stats = [stat1, stat2, stat3, stat4, stat5]
+    y_label = ['numberItems', 'currentSize', 'totalRequests', 'missRate', 'hitRate']
+    title = ['numberItems', 'currentSize', 'totalRequests', 'missRate', 'hitRate']
     result = []
-    for i in [0,1,2,3,4]:
-        
+    stat1 = [x for x in range(30)]
+    stat2 = [2*x for x in range(50)]
+    stat3 = [3*x for x in range(30)]
+    stat4 = [4*x for x in range(30)]
+    stat5 = [5*x for x in range(30)]
+    stats = [stat1, stat2, stat3, stat4, stat5]
+    num = 0
+    # stats = managerfunc.getAggregateStat30Mins()
+    # num = managerfunc.num_running()
+    for i in [0,1,2,3,4]:    
         result.append((draw_charts(stats[i], y_label[i], title[i])))
-        print(result)
-    return render_template('index.html', src1=result[0], src2=result[1], src3=result[2], src4=result[3], src5=result[4])
+        
+    return render_template('index.html',numofinstance=num, src1=result[0], src2=result[1], src3=result[2], src4=result[3], src5=result[4])
 
 
 
@@ -105,12 +95,28 @@ def get_config():
     Returns:
       str: the arguments for the Jinja template
     """
-    
+    #pool = managerfunc.num_running()
+    pool = 5
 
-    return render_template('config.html', poli='LRU', capa="50", pool='1',minrate='15', maxrate='75', expand='1', shrink='1')
+    return render_template('config.html', poli=policy, capa=capacity, pool=pool, minrate=minrate, maxrate=maxrate, expand=expand, shrink=shrink)
 
+@manager.route('/memcacheconfig')
+def get_memcacheconfig():
+    """Configuration page render.
 
+    Args:
+      n/a
 
+    Returns:
+      json: the arguments for the Jinja template
+    """
+    memconfig = {
+      'policy': policy,
+      'capacity': capacity
+    }
+
+    return josnify(memconfig)
+  
 @manager.route('/about')
 def get_about():
     """About page render.
