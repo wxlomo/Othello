@@ -1,0 +1,43 @@
+<!--
+ * index.html
+ * html code for the home page of the manager app
+ * Editor: Weixuan Yang, Haotian Chen
+ * Date: November 08, 2022
+-->
+
+{% extends "layout.html" %}
+{% block title %}Gallery Manager App{% endblock title %}
+{% block home %}active{% endblock home %}
+{% block bg %}style="background-image: url({{url_for('static', filename='img/index.jpg')}}); background-size: cover;"{% endblock bg %}
+{% block content %}
+<h1 class="cover-heading">Gallery Manager App</h1>
+<br>
+
+<div id='charts'>
+    <div class = 'container'>
+        <div class = 'row'>
+            <div class = 'col-md-6'>
+                <img src = "{{src1}}" class="img-responsive">
+            </div>
+            <div class = 'col-md-6'>
+                <img src = "{{src2}}" class="img-responsive">
+            </div>
+            
+        </div>
+        <div class = 'row'>
+            <div class = 'col-md-6'>
+                <img src = "{{src3}}" class="img-responsive">
+            </div>
+            <div class = 'col-md-6'>
+                <img src = "{{src4}}" class="img-responsive">
+            </div>
+        </div>
+        <div class = "row">
+            <div class = 'col-md-6'>
+                <img src = "{{src5}}" class="img-responsive">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
