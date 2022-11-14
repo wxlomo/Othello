@@ -3,12 +3,12 @@ from . import scaler
 import time
 import requests  
 import threading
-import os
-import sys
+# import os
+# import sys
 
-sys.path.append(os.path.abspath('C:/Users/Haozhe Sun/Desktop/ECE1779-Group9-Project-Code/A_2/memfunc'))
-import memfunc
-from memfunc import Memcache
+# sys.path.append(os.path.abspath('C:/Users/Haozhe Sun/Desktop/ECE1779-Group9-Project-Code/A_2/memfunc'))
+# import memfunc
+# from memfunc import Memcache
 
 
 missrate=0
