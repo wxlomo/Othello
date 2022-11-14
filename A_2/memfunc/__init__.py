@@ -1,9 +1,9 @@
-from flask import Flask
+# from flask import Flask
 
-memfunc = Flask(__name__)
+# memfunc = Flask(__name__)
 
 
-from . import memfunc
+from memfunc import memfunc
 
 
 
