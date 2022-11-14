@@ -217,17 +217,17 @@ def invalidateKey(key):
     return response
 
 
-@mem.route('/refreshConfiguration')
+@mem.route('/refreshConfiguration/<capacity>/<policy>')
 # reload the configurations from database after frontend update it
-def refreshConfiguration():
+def refreshConfiguration(capacity, policy):
     # t = datetime.datetime.now()
     # memcacheStatistics.addRequestTime(t)
-    cnx = get_db()
+    # cnx = get_db()
 
-    cursor = cnx.cursor()
-    query = "SELECT capacity, lru FROM gallery.memcache_config WHERE userid = 1;"
-    cursor.execute(query)
-    capacity, policy = cursor.fetchone()
+    # cursor = cnx.cursor()
+    # query = "SELECT capacity, lru FROM gallery.memcache_config WHERE userid = 1;"
+    # cursor.execute(query)
+    # capacity, policy = cursor.fetchone()
 
     memcacheConfig['capacity'] = int(capacity)
     if str(policy) == 'lru':
@@ -235,8 +235,8 @@ def refreshConfiguration():
     else:
         memcacheConfig[policy] = 'Random'
 
-    cursor.close()
-    cnx.close()
+    # cursor.close()
+    # cnx.close()
     while (memcacheStatistics.get_size() > memcacheConfig['capacity'] * 1024 * 1024):
         if memcacheConfig['policy'] == 'LRU':
             delvalue = cache.popitem(False)[1]
