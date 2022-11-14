@@ -84,7 +84,7 @@ def get_home():
 
 
 
-
+#render config page
 @manager.route('/config')
 def get_config():
     """Configuration page render.
@@ -100,6 +100,7 @@ def get_config():
 
     return render_template('config.html', poli=policy, capa=capacity, pool=pool, minrate=minrate, maxrate=maxrate, expand=expand, shrink=shrink)
 
+#return memcahce policy and capacity for frontend
 @manager.route('/memcacheconfig')
 def get_memcacheconfig():
     """Configuration page render.
@@ -115,8 +116,33 @@ def get_memcacheconfig():
       'capacity': capacity
     }
 
-    return josnify(memconfig)
+    return jsonify(memconfig)
   
+  
+#return scaler settings for auto scaler
+@manager.route('/scalerconfig')
+def get_scalerconfig():
+    """Configuration page render.
+
+    Args:
+      n/a
+
+    Returns:
+      json: the arguments for the Jinja template
+    """
+    scalerconfig = {
+      'minrate': minrate,
+      'maxrate': maxrate,
+      'expand': expand,
+      'shrink': shrink
+    }
+
+    return jsonify(scalerconfig)
+
+
+
+
+
 @manager.route('/about')
 def get_about():
     """About page render.
