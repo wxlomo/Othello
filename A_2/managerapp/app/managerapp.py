@@ -139,9 +139,85 @@ def get_scalerconfig():
 
     return jsonify(scalerconfig)
 
+#update memcache policy and capacity
+@manager.route('/putMemcacheConfig', methods=['POST'])
+def put_memcacheconfig():
+    """Configuration page render.
 
+    Args:
+      n/a
 
+    Returns:
+      json: the arguments for the Jinja template
+    """
+    global policy
+    global capacity
+    policy = request.form['policy']
+    capacity = request.form['capacity']
+    return render_template('result.html', result='Your Request Has Been Processed :)')
 
+#update scaler settings
+@manager.route('/putScalerConfig', methods=['POST'])
+def put_scalerconfig():
+    """Configuration page render.
+
+    Args:
+      n/a
+
+    Returns:
+      json: the arguments for the Jinja template
+    """
+    global minrate
+    global maxrate
+    global expand
+    global shrink
+    minrate = request.form['minrate']
+    maxrate = request.form['maxrate']
+    expand = request.form['expand']
+    shrink = request.form['shrink']
+    return render_template('result.html', result='Your Request Has Been Processed :)')
+
+#return 1min miss rate for auto scaler to use
+@manager.route('/1minmiss')
+def get_1minmiss():
+    """Configuration page render.
+
+    Args:
+      n/a
+
+    Returns:
+      json: the arguments for the Jinja template
+    """
+    missrate = managerfunc.getAggregateMissRate1mins()
+    return missrate
+  
+#return number of instance running for auto scaler to use
+@manager.route('/numrunning')
+def get_num_running():
+    """Configuration page render.
+
+    Args:
+      n/a
+
+    Returns:
+      json: the arguments for the Jinja template
+    """
+    num = managerfunc.num_running()
+    return num
+
+#return ip of nth instance for auto scaler to use
+@manager.route('/ip/<n>')
+def get_nth_ip(n):
+    """Configuration page render.
+
+    Args:
+      n/a
+
+    Returns:
+      ip
+    """
+    ip = managerfunc.get_nth_ip(n)
+    return ip
 
 @manager.route('/about')
 def get_about():
@@ -157,30 +233,6 @@ def get_about():
     return render_template('about.html')
 
 
-
-@manager.route('/putConfig', methods=['POST'])
-def put_config():
-    """Commit the changes in configurations.
-
-    Args:
-      n/a
-
-    Returns:
-      str: the arguments for the Jinja template
-    """
-    
-    policy = request.form['policy']
-    capacity = request.form['capacity']
-    manager.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    cursor = db_wrapper('put_config', policy, capacity)
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    if request.form['clear'] == "yes":
-        response = requests.get("http://localhost:5001/clear")  # clear the cache
-        manager.logger.debug(response.text)
-    response = requests.get("http://localhost:5001/refreshConfiguration")
-    manager.logger.debug(response.text)
-    return render_template('result.html', result='Your Request Has Been Processed :)')
 
 ############################################################################################
 @manager.route('/setManual', methods=['POST'])
