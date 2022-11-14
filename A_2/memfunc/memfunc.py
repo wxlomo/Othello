@@ -192,6 +192,7 @@ def get_nth_ip(n):
     if instances[str(n)]["Status"]=="running" and instances[str(n)]["Activate"]=="True"and instances[str(n)]["PublicIP"] != "":
         return instances[str(n)]["PublicIP"]
     return "Error! Failed retrive ip"
+
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':

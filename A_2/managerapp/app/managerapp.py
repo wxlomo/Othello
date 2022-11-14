@@ -16,12 +16,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import mysql.connector
 import requests
-import memfunc
-from memfunc import test2
+
 from flask import escape, g, render_template, request
 from werkzeug.utils import secure_filename
 
-from . import dbconfig, manager
+from . import manager
 
 
 def get_db():
@@ -54,7 +53,6 @@ def draw_charts(stats:list, y_label:str, title:str):
     """
     # draw the charts
     x1 = [x for x in range(10)]
-    print(x1, stats)
     l1 = plt.plot(x1, stats, 'r')
     plt.xlabel('Time')
     plt.ylabel(y_label)
@@ -79,13 +77,18 @@ def get_home():
     """
     y_label = ['missRate', 'hitRate', 'numberItems', 'currentSize', 'totalRequests']
     title = ['missRate', 'hitRate', 'numberItems', 'currentSize', 'totalRequests']
-    stats = test1()
-  
-    for i in range(len(stats)):
+    stat1 = [x for x in range(10)]
+    stat2 = [2*x for x in range(10)]
+    stat3 = [3*x for x in range(10)]
+    stat4 = [4*x for x in range(10)]
+    stat5 = [5*x for x in range(10)]
+    stats = [stat1, stat2, stat3, stat4, stat5]
+    result = []
+    for i in [0,1,2,3,4]:
         
-        test2=(draw_charts(stats[i], y_label[i], title[i]))
-        
-    return render_template('index.html', src=test2)
+        result.append((draw_charts(stats[i], y_label[i], title[i])))
+        print(result)
+    return render_template('index.html', src1=result[0], src2=result[1], src3=result[2], src4=result[3], src5=result[4])
 
 
 

@@ -12,14 +12,32 @@
 {% block content %}
 <h1 class="cover-heading">Gallery Manager App</h1>
 <br>
-<div class = "table-responsive">
-    
-    <img src="{{src}}">
-    <img src="{{src}}">
-    <img src="{{src}}">
-    <img src="{{src}}">
-    <img src="{{src}}">
-    <img src="{{src}}">
+
+<div id='charts'>
+    <div class = 'container'>
+        <div class = 'row'>
+            <div class = 'col-md-6'>
+                <img src = "{{src1}}" class="img-responsive">
+            </div>
+            <div class = 'col-md-6'>
+                <img src = "{{src2}}" class="img-responsive">
+            </div>
+            
+        </div>
+        <div class = 'row'>
+            <div class = 'col-md-6'>
+                <img src = "{{src3}}" class="img-responsive">
+            </div>
+            <div class = 'col-md-6'>
+                <img src = "{{src4}}" class="img-responsive">
+            </div>
+        </div>
+        <div class = "row">
+            <div class = 'col-md-6'>
+                <img src = "{{src5}}" class="img-responsive">
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock content %}
