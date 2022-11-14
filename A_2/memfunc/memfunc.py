@@ -318,4 +318,3 @@ def getAggregateStat30Mins():
         numberItems.append(numItem)
         currentSize.append(size)
     return [numberItems, currentSize, totalRequests, missRate, hitRate]
-
