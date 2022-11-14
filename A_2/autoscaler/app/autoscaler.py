@@ -22,38 +22,42 @@ SHRINK=1
 def threadedUpdate():
     thread = threading.Thread(target=updatestat)
     thread.start()
+    
 # update every 1 mins
 def updatestat():
-    instances=Memcache()
+
     while True:
         time.sleep(60)
-        response=requests.get("http://localhost:5002/auto")
-        run=int(response.json())
-        response=requests.get("http://localhost:5002/expand")
-        EXPAND=int(response.json())
-        response=requests.get("http://localhost:5002/shrink")
-        SHRINK=int(response.json())
-        response=requests.get("http://localhost:5002/max")
-        MAXMISS=int(response.json())
-        response=requests.get("http://localhost:5002/min")
-        MINMISS=int(response.json())
+        response=requests.get("http://localhost:5002/scalerconfig")
+        result=response.json()
+        run=int(result['auto'])
+        
+        EXPAND=float(result['expand'])
+        
+        SHRINK=float(result['shrink'])
+        
+        MAXMISS=float(result['maxrate'])
+        
+        MINMISS=float(result['minrate'])
         if (run):
-            missrate=instances.getAggregateMissRate1mins()
-            num=instances.num_running()
+            response=requests.get("http://localhost:5002/1minmiss")
+            missrate=float(response.json())
+            response=requests.get("http://localhost:5002/numrunning")
+            num=int(response.json())
             if missrate>MAXMISS:
                 new=max(8,int(num*EXPAND))
                 if new<8 and new==num:
                     new+=1
                 add=new-num
                 for i in range(add):
-                    instances.start_ec2_instance()
+                    response=requests.get("http://localhost:5002/start")
             elif missrate<MINMISS:
                 new=max(1,int(num*SHRINK))
                 if new>1 and new==num:
                     new-=1
                 add=num-new
                 for i in range(add):
-                    instances.stop_ec2_instance()
+                    response=requests.get("http://localhost:5002/stop")
                     
 @scaler.route('/')
 # status page render
