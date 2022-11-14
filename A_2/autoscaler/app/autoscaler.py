@@ -50,14 +50,14 @@ def updatestat():
                     new+=1
                 add=new-num
                 for i in range(add):
-                    response=requests.get("http://localhost:5002/start")
+                    response=requests.get("http://localhost:5002/startinstance")
             elif missrate<MINMISS:
                 new=max(1,int(num*SHRINK))
                 if new>1 and new==num:
                     new-=1
                 add=num-new
                 for i in range(add):
-                    response=requests.get("http://localhost:5002/stop")
+                    response=requests.get("http://localhost:5002/stopinstance")
                     
 @scaler.route('/')
 # status page render
