@@ -30,7 +30,7 @@ def updatestat():
         time.sleep(60)
         response=requests.get("http://localhost:5002/scalerconfig")
         result=response.json()
-        run=int(result['auto'])
+        run=int(result['scalerswitch'])
         
         EXPAND=float(result['expand'])
         
