@@ -25,10 +25,13 @@ from . import manager, managerfunc
 #variables
 policy = 'lru'
 capacity= 4
-minrate='15' 
+minrate='15'
 maxrate='75' 
 expand='1' 
 shrink='1'
+scalerswitch='0'
+
+
 def draw_charts(stats:list, y_label:str, title:str):
     """Draw the charts for the statistics.
 
@@ -51,6 +54,11 @@ def draw_charts(stats:list, y_label:str, title:str):
     src = 'data:image/png;base64,{}'.format(data)
     plt.close()
     return src
+  
+  
+# @manager.before_first_request
+# def before_first_request():
+#     managerfunc.init_ec2_instances()
     
 
 @manager.route('/')
@@ -72,7 +80,7 @@ def get_home():
     stat4 = [4*x for x in range(30)]
     stat5 = [5*x for x in range(30)]
     stats = [stat1, stat2, stat3, stat4, stat5]
-    num = 0
+    num=0
     # stats = managerfunc.getAggregateStat30Mins()
     # num = managerfunc.num_running()
     for i in [0,1,2,3,4]:    
@@ -97,8 +105,12 @@ def get_config():
     """
     #pool = managerfunc.num_running()
     pool = 5
-
-    return render_template('config.html', poli=policy, capa=capacity, pool=pool, minrate=minrate, maxrate=maxrate, expand=expand, shrink=shrink)
+    if scalerswitch == '0':
+      sswitch='Off';
+    else:
+      sswitch='On';
+      
+    return render_template('config.html',switch=sswitch, poli=policy, capa=capacity, pool=pool, minrate=minrate, maxrate=maxrate, expand=expand, shrink=shrink)
 
 #return memcahce policy and capacity for frontend
 @manager.route('/memcacheconfig')
@@ -131,6 +143,7 @@ def get_scalerconfig():
       json: the arguments for the Jinja template
     """
     scalerconfig = {
+      'scalerswitch': scalerswitch,
       'minrate': minrate,
       'maxrate': maxrate,
       'expand': expand,
@@ -152,8 +165,11 @@ def put_memcacheconfig():
     """
     global policy
     global capacity
+    ipList = managerfunc.get_all_ip()
     policy = request.form['policy']
     capacity = request.form['capacity']
+    for eachIP in ipList:
+        r = requests.get("http://"+eachIP+":5001/refreshConfiguration"+"/"+str(policy)+"/"+str(capacity))
     return render_template('result.html', result='Your Request Has Been Processed :)')
 
 #update scaler settings
@@ -171,6 +187,8 @@ def put_scalerconfig():
     global maxrate
     global expand
     global shrink
+    global scalerswitch
+    scalerswitch = request.form['switch']
     minrate = request.form['minrate']
     maxrate = request.form['maxrate']
     expand = request.form['expand']
@@ -192,7 +210,7 @@ def get_1minmiss():
     return missrate
   
 #return number of instance running for auto scaler to use
-@manager.route('/numrunning')
+@manager.route('/numrunning ')
 def get_num_running():
     """Configuration page render.
 
@@ -235,36 +253,33 @@ def get_about():
 
 
 ############################################################################################
-@manager.route('/setManual', methods=['POST'])
-def set_manual():
-    """Set the manual mode.
+@manager.route('/startinstance')
+def startinstance():
+    response = managerfunc.start_ec2_instances()
+    return response
 
-    Args:
-      n/a
 
-    Returns:
-      str: the arguments for the Jinja template
-    """
-    manager.logger.debug('\n* Setting manual mode')
-    response = requests.get("http://localhost:5001/setManual")
-    manager.logger.debug(response.text)
-    return render_template('result.html', result='Your Request Has Been Processed :)')
+@manager.route('/stopinstance')
+def stopinstance():
+    response = managerfunc.stop_ec2_instances()
+    return response
 
-@manager.route('/setAuto', methods=['POST'])
-def set_auto():
-    """Set the auto mode.
 
-    Args:
-      n/a
-
-    Returns:
-      str: the arguments for the Jinja template
-    """
-    manager.logger.debug('\n* Setting auto mode')
-    response = requests.get("http://localhost:5001/setAuto")
-    manager.logger.debug(response.text)
+@manager.route('/manualstartinstance', methods=['POST'])
+def manualstartinstance():
+    # scalerswitch = '0'
+    # response = managerfunc.start_ec2_instances()
+    # print(response, scalerswitch)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
+@manager.route('/manualstopinstance', methods=['POST'])
+def manualstopinstance():
+    scalerswitch = '0'
+    response = managerfunc.stop_ec2_instances()
+    print(response, scalerswitch)
+    return render_template('result.html', result='Your Request Has Been Processed :)')
+  
+
 @manager.route('/deleteData', methods=['POST'])
 def delete_data():
     """Delete the data.

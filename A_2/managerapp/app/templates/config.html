@@ -26,14 +26,23 @@
 
 
 <p class="lead"><label for="Manual">Current memcache pool size is {{pool}}.</label>
-    <p class="lead">
-        <button class="btn btn-default" onclick='/setManual'>Grow (+1)</button>
-        <button class="btn btn-default" onclick='/setManual'>Shrink (-1)</button>
-    </p>
+    
+        <form action="/manualstartinstance", method = "post">
+            <button type="submit" class="btn btn-default" >Grow (+1)</button>
+        </form>
+        <form action="/manualstopinstance", method = "post">
+            <button type="submit"class="btn btn-default" >Shrink (-1)</button>
+        </form>
+
 
 
 <form method="post" enctype="multipart/form-data" action="/putScalerConfig">
     <p class="lead"><label>Automatic Mode Settings:</label>
+    <p class="lead"><label>Current Auto Scaler is {{switch}}. Set to : </label>
+    <select id="switch" style="width: 120px; color:black" name="switch"> </p>     
+        <option value="1">On</option>
+        <option value="0">Off</option>
+    </select></p>   
     <p class="lead"><label>Set Max Miss Rate threshold to: </label>
     <input type="number" id="maxrate" style="width: 120px; color:black" name="maxrate" value="{{maxrate}}" required>% </p>
     <p class="lead"><label>Set Min Miss Rate threshold to: </label>
