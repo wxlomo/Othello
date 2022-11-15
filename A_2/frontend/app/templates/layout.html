@@ -43,8 +43,6 @@
                 </form>
 
                 <ul class="nav navbar-nav navbar-right">
-                    <li class="nav-item {% block config %}{% endblock config %}"><a href="{{url_for('get_config')}}">Configuration</a></li>
-                    <li class="nav-item {% block stats %}{% endblock stats %}"><a href="{{url_for('get_statistics')}}">Statistics</a></li>
                     <li class="nav-item {% block about %}{% endblock about %}"><a href="{{url_for('get_about')}}">About</a></li>
                 </ul>
             </div>
