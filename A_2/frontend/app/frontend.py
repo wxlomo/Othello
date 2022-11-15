@@ -67,11 +67,13 @@ def db_wrapper(query_type, arg1='', arg2=''):
     if query_type == 'get_key':
         query = "SELECT id FROM gallery.key_mapping;"
     elif query_type == 'get_image':
-        query = f"SELECT value FROM gallery.key_mapping WHERE id = '{arg1}'"
+        query = f"SELECT value FROM gallery.key_mapping WHERE id = '{arg1}';"
     elif query_type == 'put_image':
         query = f"INSERT INTO gallery.key_mapping  (`id`, `value`) VALUES ('{arg1}', '{arg2}');"
     elif query_type == 'put_image_exist':
         query = f"UPDATE gallery.key_mapping SET value = '{arg2}' WHERE id = '{arg1}';"
+    elif query_type == 'clear_key':
+        query = "DELETE FROM gallery.key_mapping;"
     else:
         front.logger.error('\n* Wrong query type: ' + str(query_type))
         return None
@@ -239,7 +241,7 @@ def put_image():
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
         return render_template('result.html', result='Something Wrong :(')
-    data = {'key': key, 'value': image_file}
+    data = {'key': key, 'value': base64.b64encode(image_file).decode("utf-8")}
     response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
     front.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
@@ -335,7 +337,7 @@ def put_image_api():
                 'message': 'Internal Server Error: s3 error, ' + str(error)
             }
         }
-    data = {'key': key, 'value': image_file}
+    data = {'key': key, 'value': base64.b64encode(image_file).decode("utf-8")}
     response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
     front.logger.debug(response.text)
     return {
@@ -441,3 +443,44 @@ def get_image_api(key_value):
         'success': 'true',
         'content': image
     }
+
+
+@front.route('/api/teardown', methods=['POST'])
+def teardown_api(key_value):
+    """The api to get rid of the data in RDS and S3
+
+    Args:
+      n/a
+
+    Returns:
+      dict: the JSON format response of the HTTP request
+
+    """
+    front.logger.debug('\n* Deleting images from s3...')
+    try:
+        for obj in s3.Bucket(config.s3_config['name']).objects.all():
+            front.logger.debug('  Deleting: ' + str(obj.key))
+            obj.delete()
+    except Exception as error:
+        front.logger.debug('\n* Error: ' + str(error))
+        return {
+            'success': 'false',
+            'error': {
+                'code': 500,
+                'message': 'Internal Server Error: s3 error, ' + str(error)
+            }
+        }
+    front.logger.debug('\n* Clearing RDS database...')
+    cursor = db_wrapper('clear_key')
+    if not cursor:
+        return {
+            'success': 'false',
+            'error': {
+                'code': 500,
+                'message': 'Internal Server Error: Fail in connecting to rds'
+            }
+        }
+    return {
+        'success': 'true'
+    }
+
