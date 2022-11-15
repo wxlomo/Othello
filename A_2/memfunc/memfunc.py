@@ -190,9 +190,9 @@ def get_nth_ip(n):
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
-            
+            return int(i)
             break
-    return int(i)
+    return 8
 
 
 
