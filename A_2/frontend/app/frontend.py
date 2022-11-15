@@ -6,17 +6,16 @@
  * Date: Oct. 11, 2022
 """
 
-from . import front, dbconfig
+from . import front, config, s3, rds
 from flask import render_template, request, g, escape
 from werkzeug.utils import secure_filename
 import mysql.connector
-import os
 import requests
 import base64
 
 
 def get_db():
-    """Establish the connection to the database.
+    """Establish the connection to the database on rds.
 
     Args:
       n/a
@@ -25,12 +24,15 @@ def get_db():
       MySQLConnection: the connector to the available database.
     """
     if 'db' not in g:
-        g.db = mysql.connector.connect(
-            user=dbconfig.db_config['user'],
-            password=dbconfig.db_config['password'],
-            host=dbconfig.db_config['host'],
-            database=dbconfig.db_config['database']
-        )
+        try:
+            g.db = mysql.connector.connect(
+                user=config.rds_config['user'],
+                password=config.rds_config['password'],
+                host=config.rds_config['host'],
+                database=config.rds_config['database']
+            )
+        except Exception as error:
+            front.logger.error('\n* Error in connecting to rds: ' + str(error))
     return g.db
 
 
@@ -66,16 +68,10 @@ def db_wrapper(query_type, arg1='', arg2=''):
         query = "SELECT id FROM gallery.key_mapping;"
     elif query_type == 'get_image':
         query = f"SELECT value FROM gallery.key_mapping WHERE id = '{arg1}'"
-    elif query_type == 'get_config':
-        query = "SELECT capacity,lru FROM gallery.memcache_config WHERE userid = 1;"
-    elif query_type == 'get_statistics':
-        query = "SELECT itemNum, totalSize, requestNum, missRate, hitRate FROM gallery.memcache_stat WHERE userid = 1;"
     elif query_type == 'put_image':
         query = f"INSERT INTO gallery.key_mapping  (`id`, `value`) VALUES ('{arg1}', '{arg2}');"
     elif query_type == 'put_image_exist':
         query = f"UPDATE gallery.key_mapping SET value = '{arg2}' WHERE id = '{arg1}';"
-    elif query_type == 'put_config':
-        query = f"UPDATE gallery.memcache_config SET lru = '{arg1}', capacity = {arg2} WHERE userid = 1;"
     else:
         front.logger.error('\n* Wrong query type: ' + str(query_type))
         return None
@@ -86,8 +82,8 @@ def db_wrapper(query_type, arg1='', arg2=''):
         if query_type == 'put_image' or query_type == 'put_image_exist' or query_type == 'put_config':
             db.commit()
         return cursor
-    except mysql.connector.Error as err:
-        front.logger.error('\n* Error in executing query: ' + str(err))
+    except Exception as error:
+        front.logger.error('\n* Error in executing query: ' + str(error))
         return None
 
 
@@ -167,58 +163,24 @@ def get_image():
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
-        old_path = ''
+        filename = ''
         for row in cursor:
-            old_path = row[0]
-        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:  # the key is either not in database
+            filename = row[0]
+        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
+        if not filename:  # the key is either not in database
             return render_template('result.html', result='Your Key Is Invalid :(')
-        else:  # the key is in database
-            image = base64.b64encode(open(old_path, 'rb').read()).decode('utf-8')
+        try:  # the key is in database
+            image = base64.b64encode(
+                s3.get_object(Bucket=config.s3_config['name'], Key=filename)['Body'].read()).decode("utf-8")
+        except Exception as error:
+            front.logger.debug('\n* Error: ' + str(error))
+            return render_template('result.html', result='Something Wrong :(')
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
         front.logger.debug(response.text)
     else:  # if in memcache
         image = response.json()
     return render_template('retrieve.html', image='data:image/*; base64, {0}'.format(image), key=escape(key))
-
-
-@front.route('/config')
-def get_config():
-    """Configuration page render.
-
-    Args:
-      n/a
-
-    Returns:
-      str: the arguments for the Jinja template
-    """
-    cursor = db_wrapper('get_config')
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    capacity, policy = cursor.fetchone()
-    front.logger.debug('\n* Viewing config with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    if policy == 'lru':
-        return render_template('config.html', poli='LRU', capa=capacity)
-    else:
-        return render_template('config.html', poli='Random', capa=capacity)
-
-
-@front.route('/statistics')
-def get_statistics():
-    """Statistics page render.
-
-    Args:
-      n/a
-
-    Returns:
-      str: the arguments for the Jinja template
-    """
-    front.logger.debug('\n* Viewing statistics')
-    cursor = db_wrapper('get_statistics')
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    return render_template('statistics.html', cursor=cursor)
 
 
 @front.route('/about')
@@ -237,7 +199,7 @@ def get_about():
 
 @front.route('/putImage', methods=['POST'])
 def put_image():
-    """Commit the page uploading to MemCache and database.
+    """Commit the page uploading to MemCache and s3.
 
     Args:
       n/a
@@ -246,10 +208,9 @@ def put_image():
       str: the arguments for the Jinja template
     """
     image_file = request.files['image']
+    image_file.filename = secure_filename(image_file.filename)
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
-    path = path.replace('\\', '/')
-    front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    front.logger.debug('\n* Uploading an image' + str(image_file.filename) + ' with key: ' + str(key))
     if not is_image(image_file):
         return render_template('result.html', result='Input File Format Is Not Supported :(')
     data = {'key': key}
@@ -259,56 +220,34 @@ def put_image():
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
-        old_path = ''
+        filename = ''
         for row in cursor:
-            old_path = row[0]
-        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:  # the key is either not in database
-            cursor = db_wrapper('put_image', key, path)  # insert the key and path to database
+            filename = row[0]
+        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
+        if not filename:  # the key is either not in database
+            cursor = db_wrapper('put_image', key, image_file.filename)  # insert the key and filename to database
         else:  # the key is in database
-            cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
+            cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     else:  # the key is in memcache
         response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))  # invalidate the existed key
         front.logger.debug(response.text)
-        cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
+        cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
-    image_file.save(path)
-    image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
-    data = {'key': key, 'value': image}
+    try:
+        s3.put_object(Bucket=config.s3_config['name'], Key=image_file.filename, Body=image_file)
+    except Exception as error:
+        front.logger.debug('\n* Error: ' + str(error))
+        return render_template('result.html', result='Something Wrong :(')
+    data = {'key': key, 'value': image_file}
     response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
     front.logger.debug(response.text)
     return render_template('result.html', result='Your Image Has Been Uploaded :)')
 
 
-@front.route('/putConfig', methods=['POST'])
-def put_config():
-    """Commit the changes in configurations.
-
-    Args:
-      n/a
-
-    Returns:
-      str: the arguments for the Jinja template
-    """
-    
-    policy = request.form['policy']
-    capacity = request.form['capacity']
-    front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    cursor = db_wrapper('put_config', policy, capacity)
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    if request.form['clear'] == "yes":
-        response = requests.get("http://localhost:5001/clear")  # clear the cache
-        front.logger.debug(response.text)
-    response = requests.get("http://localhost:5001/refreshConfiguration")
-    front.logger.debug(response.text)
-    return render_template('result.html', result='Your Request Has Been Processed :)')
-
-
 @front.route('/api/upload', methods=['POST'])
 def put_image_api():
-    """The api to upload an image to the MemCache and database
+    """The api to upload an image to the MemCache and s3
 
     Args:
       n/a
@@ -317,10 +256,9 @@ def put_image_api():
       dict: the JSON format response of the HTTP request
     """
     image_file = request.files['file']
+    image_file.filename = secure_filename(image_file.filename)
     key = request.form['key']
-    path = os.path.join('app/static/img', secure_filename(key) + '.' + image_file.filename.rsplit('.', 1)[1])
-    path = path.replace('\\', '/')
-    front.logger.debug('\n* Uploading an image with key: ' + str(key) + ' and path: ' + str(path))
+    front.logger.debug('\n* Uploading an image' + str(image_file.filename) + ' with key: ' + str(key))
     if not key:
         return {
             'success': 'false',
@@ -353,7 +291,6 @@ def put_image_api():
                 'message': 'Bad Request: Input file format is not supported.'
             }
         }
-    image_file.save(path)
     data = {'key': key}
     response = requests.post("http://localhost:5001/get", data=data)  # retrieve the image by key from memcache
     front.logger.debug(response.text)
@@ -364,31 +301,41 @@ def put_image_api():
                 'success': 'false',
                 'error': {
                     'code': 500,
-                    'message': 'Internal Server Error: Fail in connecting to database'
+                    'message': 'Internal Server Error: Fail in connecting to rds'
                 }
             }
-        old_path = ''
+        filename = ''
         for row in cursor:
-            old_path = row[0]
-        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:  # the key is either not in database
-            cursor = db_wrapper('put_image', key, path)  # insert the key and path to database
+            filename = row[0]
+        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
+        if not filename:  # the key is either not in database
+            cursor = db_wrapper('put_image', key, image_file.filename)  # insert the key and filename to database
         else:  # the key is in database
-            cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
+            cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     else:  # the key is in memcache
         response = requests.get("http://localhost:5001/invalidateKey/%s".format(key))  # invalidate the existed key
         front.logger.debug(response.text)
-        cursor = db_wrapper('put_image_exist', key, path)  # update the path in the database
+        cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     if not cursor:
         return {
             'success': 'false',
             'error': {
                 'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to database'
+                'message': 'Internal Server Error: Fail in connecting to rds'
             }
         }
-    image = base64.b64encode(open(path, 'rb').read()).decode('utf-8')
-    data = {'key': key, 'value': image}
+    try:
+        s3.put_object(Bucket=config.s3_config['name'], Key=image_file.filename, Body=image_file)
+    except Exception as error:
+        front.logger.debug('\n* Error: ' + str(error))
+        return {
+            'success': 'false',
+            'error': {
+                'code': 500,
+                'message': 'Internal Server Error: s3 error, ' + str(error)
+            }
+        }
+    data = {'key': key, 'value': image_file}
     response = requests.post("http://localhost:5001/put", data=data)  # cache the key and image
     front.logger.debug(response.text)
     return {
@@ -414,7 +361,7 @@ def get_key_api():
             'success': 'false',
             'error': {
                 'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to database'
+                'message': 'Internal Server Error: Fail in connecting to rds'
             }
         }
     for row in cursor:
@@ -458,14 +405,14 @@ def get_image_api(key_value):
                 'success': 'false',
                 'error': {
                     'code': 500,
-                    'message': 'Internal Server Error: Fail in connecting to database'
+                    'message': 'Internal Server Error: Fail in connecting to rds'
                 }
             }
-        old_path = ''
+        filename = ''
         for row in cursor:
-            old_path = row[0]
-        front.logger.debug('\n* Retrieving returns path: ' + str(old_path))
-        if not old_path:  # the key is either not in database
+            filename = row[0]
+        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
+        if not filename:  # the key is either not in database
             return {
                 'success': 'false',
                 'error': {
@@ -473,8 +420,18 @@ def get_image_api(key_value):
                     'message': 'Not Found: The given key is invalid.'
                 }
             }
-        else:  # the key is in database
-            image = base64.b64encode(open(old_path, 'rb').read()).decode('utf-8')
+        try:  # the key is in database
+            image = base64.b64encode(
+                s3.get_object(Bucket=config.s3_config['name'], Key=filename)['Body'].read()).decode("utf-8")
+        except Exception as error:
+            front.logger.debug('\n* Error: ' + str(error))
+            return {
+                'success': 'false',
+                'error': {
+                    'code': 500,
+                    'message': 'Internal Server Error: s3 error, ' + str(error)
+                }
+            }
         data = {'key': key, 'value': image}
         response = requests.post("http://localhost:5001/put", data=data)
         front.logger.debug(response.text)
@@ -483,37 +440,4 @@ def get_image_api(key_value):
     return {
         'success': 'true',
         'content': image
-    }
-
-
-@front.route('/api/config', methods=['POST'])
-def put_config_api():
-    """The api to commit the changes in configurations.
-
-    Args:
-      n/a
-
-    Returns:
-      dict: the JSON format response of the HTTP request
-    """
-
-    policy = request.form['policy']
-    capacity = request.form['capacity']
-    front.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    cursor = db_wrapper('put_config', policy, capacity)
-    if not cursor:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to database'
-            }
-        }
-    if request.form['clear'] == "yes":  # clear the cache
-        response = requests.get("http://localhost:5001/clear")
-        front.logger.debug(response.text)
-    response = requests.get("http://localhost:5001/refreshConfiguration")
-    front.logger.debug(response.text)
-    return {
-        'success': 'true'
     }
