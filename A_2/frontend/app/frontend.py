@@ -446,7 +446,7 @@ def get_image_api(key_value):
 
 
 @front.route('/api/teardown', methods=['POST'])
-def teardown_api(key_value):
+def teardown_api():
     """The api to get rid of the data in RDS and S3
 
     Args:
