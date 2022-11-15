@@ -388,7 +388,7 @@ def get_image_api(key_value):
     """The api to retrieve an image by the given key from MemCache or database
 
     Args:
-      n/a
+      key_value (str): the key of the image
 
     Returns:
       dict: the JSON format response of the HTTP request
