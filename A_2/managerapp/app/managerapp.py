@@ -260,30 +260,42 @@ def get_about():
 
 
 
-############################################################################################
+
 @manager.route('/startinstance')
 def startinstance():
-    response = managerfunc.start_ec2_instances()
+    try:
+      response = managerfunc.start_ec2_instances()
+    except Exception as e:
+      traceback.print_exc()
     return response
 
 
 @manager.route('/stopinstance')
 def stopinstance():
-    response = managerfunc.stop_ec2_instances()
+    try:
+      response = managerfunc.stop_ec2_instances()
+    except Exception as e:
+      traceback.print_exc()
     return response
 
 
 @manager.route('/manualstartinstance', methods=['POST'])
 def manualstartinstance():
     scalerswitch = '0'
-    response = managerfunc.start_ec2_instances()
+    try:
+      response = managerfunc.start_ec2_instances()
+    except Exception as e:
+      traceback.print_exc()
     print(response, scalerswitch)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
 @manager.route('/manualstopinstance', methods=['POST'])
 def manualstopinstance():
     scalerswitch = '0'
-    response = managerfunc.stop_ec2_instances()
+    try:
+      response = managerfunc.stop_ec2_instances()
+    except Exception as e:
+      traceback.print_exc()
     print(response, scalerswitch)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
