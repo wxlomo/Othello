@@ -10,6 +10,7 @@
 import base64
 import os
 from io import BytesIO
+import traceback
 
 import matplotlib
 
@@ -56,9 +57,9 @@ def draw_charts(stats:list, y_label:str, title:str):
     return src
   
   
-# @manager.before_first_request
-# def before_first_request():
-#     managerfunc.init_ec2_instances()
+@manager.before_first_request
+def before_first_request():
+    managerfunc.init_ec2_instances()
     
 
 @manager.route('/')
@@ -74,15 +75,15 @@ def get_home():
     y_label = ['numberItems', 'currentSize', 'totalRequests', 'missRate', 'hitRate']
     title = ['numberItems', 'currentSize', 'totalRequests', 'missRate', 'hitRate']
     result = []
-    stat1 = [x for x in range(30)]
-    stat2 = [2*x for x in range(50)]
-    stat3 = [3*x for x in range(30)]
-    stat4 = [4*x for x in range(30)]
-    stat5 = [5*x for x in range(30)]
-    stats = [stat1, stat2, stat3, stat4, stat5]
-    num=0
-    # stats = managerfunc.getAggregateStat30Mins()
-    # num = managerfunc.num_running()
+    # stat1 = [x for x in range(30)]
+    # stat2 = [2*x for x in range(50)]
+    # stat3 = [3*x for x in range(30)]
+    # stat4 = [4*x for x in range(30)]
+    # stat5 = [5*x for x in range(30)]
+    # stats = [stat1, stat2, stat3, stat4, stat5]
+    # num=0
+    stats = managerfunc.getAggregateStat30Mins()
+    num = managerfunc.num_running()
     for i in [0,1,2,3,4]:    
         result.append((draw_charts(stats[i], y_label[i], title[i])))
         
@@ -103,8 +104,8 @@ def get_config():
     Returns:
       str: the arguments for the Jinja template
     """
-    #pool = managerfunc.num_running()
-    pool = 5
+    pool = managerfunc.num_running()
+    # pool = 5
     if scalerswitch == '0':
       sswitch='Off';
     else:
@@ -165,7 +166,10 @@ def put_memcacheconfig():
     """
     global policy
     global capacity
-    ipList = managerfunc.get_all_ip()
+    try:
+      ipList = managerfunc.get_all_ip()
+    except Exception as e:
+      traceback.print_exc()
     policy = request.form['policy']
     capacity = request.form['capacity']
     for eachIP in ipList:
@@ -234,8 +238,12 @@ def get_nth_ip(n):
     Returns:
       ip
     """
-    ip = managerfunc.get_nth_ip(n)
-    return ip
+    try:
+      ip = managerfunc.get_nth_ip(n)
+      return ip
+    except Exception as e: 
+      traceback.print_exc()
+      return e
 
 @manager.route('/about')
 def get_about():
@@ -267,9 +275,9 @@ def stopinstance():
 
 @manager.route('/manualstartinstance', methods=['POST'])
 def manualstartinstance():
-    # scalerswitch = '0'
-    # response = managerfunc.start_ec2_instances()
-    # print(response, scalerswitch)
+    scalerswitch = '0'
+    response = managerfunc.start_ec2_instances()
+    print(response, scalerswitch)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
 @manager.route('/manualstopinstance', methods=['POST'])
@@ -281,8 +289,10 @@ def manualstopinstance():
   
 ############################################################################################
 ############################################################################################
+#todo: delete all data
 ############################################################################################
 ############################################################################################
+
 @manager.route('/deleteData', methods=['POST'])
 def delete_data():
     """Delete the data.
@@ -311,7 +321,10 @@ def clear_all_cache():
       str: the arguments for the Jinja template
     """
     manager.logger.debug('\n* Clearing memcache')
-    ipList = managerfunc.get_all_ip()
+    try:
+      ipList = managerfunc.get_all_ip()
+    except Exception as e:
+      traceback.print_exc()
     for eachIP in ipList:
         response = requests.get("http://"+eachIP+":5001/clear")
     manager.logger.debug(response.text)
