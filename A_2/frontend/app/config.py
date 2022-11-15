@@ -1,12 +1,13 @@
 s3_config = {
-    'name': 'gallery',
-    'region_name': 'us-west-1'
+    'name': 'simplegallery',
+    'region_name': 'us-east-1'
 }
 
 rds_config={
-    'region_name': 'us-west-1',
+    'region_name': 'us-east-1',
     'user': 'root',
-    'host': 'mysqldb.88888888.us-west-1.rds.amazonaws.com',
+    'host': 'gallery.ckixx4aw8g1t.us-east-1.rds.amazonaws.com',
     'port': 3306,
-    'database': 'gallery'
+    'database': 'gallery',
+    'password': 'ece1779pass'
 }

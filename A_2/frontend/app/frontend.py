@@ -24,16 +24,10 @@ def get_db():
       MySQLConnection: the connector to the available database.
     """
     if 'db' not in g:
-        password = rds.generate_db_auth_token(
-            DBHostname=config.rds_config['host'],
-            Port=config.rds_config['port'],
-            DBUsername=config.rds_config['user'],
-            Region=config.rds_config['region_name']
-        )
         try:
             g.db = mysql.connector.connect(
                 user=config.rds_config['user'],
-                password=password,
+                password=config.rds_config['password'],
                 host=config.rds_config['host'],
                 database=config.rds_config['database']
             )
