@@ -56,5 +56,9 @@
 
 <p class="lead"><label>Cleaning:</label>
 <button class="btn btn-default" onclick='/deleteData'>Delete All App Data</button>
-<button class="btn btn-default" onclick='/clearMemcache'>Clear Memcache</button>
+
+<form action="/clearallcache", method = "post">
+    <button type="submit" class="btn btn-default" >Clear All Cache</button>
+</form>
+
 {% endblock content %}

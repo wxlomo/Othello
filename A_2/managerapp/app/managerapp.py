@@ -279,7 +279,10 @@ def manualstopinstance():
     print(response, scalerswitch)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
-
+############################################################################################
+############################################################################################
+############################################################################################
+############################################################################################
 @manager.route('/deleteData', methods=['POST'])
 def delete_data():
     """Delete the data.
@@ -295,8 +298,10 @@ def delete_data():
     manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
-@manager.route('/clearMemcache', methods=['POST'])
-def clear_memcache():
+
+
+@manager.route('/clearallcache')
+def clear_all_cache():
     """Clear the memcache.
 
     Args:
@@ -306,40 +311,8 @@ def clear_memcache():
       str: the arguments for the Jinja template
     """
     manager.logger.debug('\n* Clearing memcache')
-    response = requests.get("http://localhost:5001/clear")
+    ipList = managerfunc.get_all_ip()
+    for eachIP in ipList:
+        response = requests.get("http://"+eachIP+":5001/clear")
     manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
-############################################################################################
-
-
-@manager.route('/api/config', methods=['POST'])
-def put_config_api():
-    """The api to commit the changes in configurations.
-
-    Args:
-      n/a
-
-    Returns:
-      dict: the JSON format response of the HTTP request
-    """
-
-    policy = request.form['policy']
-    capacity = request.form['capacity']
-    manager.logger.debug('\n* Configuring with capacity: ' + str(capacity) + ' and policy: ' + str(policy))
-    cursor = db_wrapper('put_config', policy, capacity)
-    if not cursor:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to database'
-            }
-        }
-    if request.form['clear'] == "yes":  # clear the cache
-        response = requests.get("http://localhost:5001/clear")
-        manager.logger.debug(response.text)
-    response = requests.get("http://localhost:5001/refreshConfiguration")
-    manager.logger.debug(response.text)
-    return {
-        'success': 'true'
-    }
