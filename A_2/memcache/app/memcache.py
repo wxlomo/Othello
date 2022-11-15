@@ -4,6 +4,7 @@ import datetime
 import mysql.connector
 import threading
 import time
+
 from collections import OrderedDict
 from flask import request, g
 from . import mem
@@ -288,6 +289,25 @@ def get():
     return response
 
 
+
+@mem.route('/getall', methods=['POST'])
+# send the image retrieved from the given key to the frontend
+def get():
+    # t = datetime.datetime.now()
+    # memcacheStatistics.addRequestTime(t)
+
+    
+    if cache:
+        return cache
+    else:
+        response = mem.response_class(
+                response=json.dumps("Empty"),
+                status=400,
+                mimetype='application/json'
+            )
+
+    return response
+
 @mem.route('/put', methods=['POST'])
 # put an image and its key to memcache
 def put():
@@ -436,3 +456,4 @@ def setIndex(id):
 
     return jsonify({"success": "true",
                     "statusCode": 200})
+    
