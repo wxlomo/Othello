@@ -1,4 +1,4 @@
 awsKey={
-            'aws_access_key_id' : 'AKIA3NQ4GILKF3U7HZWT',
-            'aws_secret_access_key' : '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'
+            'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
+            'aws_secret_access_key' : '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'
         }
