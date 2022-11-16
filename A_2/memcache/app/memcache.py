@@ -8,8 +8,6 @@ import time
 from collections import OrderedDict
 from flask import request, g
 from . import mem
-import memfunc
-from memfunc import dbconfig, awsKey
 from flask import jsonify,json
 import boto3
 global cache
@@ -21,14 +19,14 @@ memcacheConfig = {'capacity': 4,
                   'policy': 'LRU'}  # default setting, get real time config from db
 
 
-def get_db():
-    dbconnect = mysql.connector.connect(
-        user=dbconfig.db_config['user'],
-        password=dbconfig.db_config['password'],
-        host=dbconfig.db_config['host'],
-        database=dbconfig.db_config['database']
-    )
-    return dbconnect
+# def get_db():
+#     dbconnect = mysql.connector.connect(
+#         user=dbconfig.db_config['user'],
+#         password=dbconfig.db_config['password'],
+#         host=dbconfig.db_config['host'],
+#         database=dbconfig.db_config['database']
+#     )
+#     return dbconnect
 
 
 # store time and result (hit/miss) of a cache action
