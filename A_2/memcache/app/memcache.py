@@ -7,7 +7,8 @@ import time
 
 from collections import OrderedDict
 from flask import request, g
-from . import mem
+from . import mem,config
+from config import awsKey
 from flask import jsonify,json
 import boto3
 global cache
@@ -290,7 +291,7 @@ def get():
 
 @mem.route('/getall', methods=['POST'])
 # send the image retrieved from the given key to the frontend
-def get():
+def getall():
     # t = datetime.datetime.now()
     # memcacheStatistics.addRequestTime(t)
 
