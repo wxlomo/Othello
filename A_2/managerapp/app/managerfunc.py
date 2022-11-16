@@ -7,6 +7,8 @@ from . import config
 awsKey = config.awsKey
 
 
+import hashlib
+
 instances = {}
 ami = "ami-080ff70d8f5b80ba5" 
 VPCID='vpc-042054f0f945d031c'
@@ -104,8 +106,9 @@ def init_ec2_instances():
                                         "Number": i,
                                         "PublicIP": ""}
     for i in range(8):
-        while instances[str(i)]["Status"]!="running" and instances[str(i)]["PublicIP"] != "":
+        while instances[str(i)]["Status"]!="running" and instances[str(i)]["PublicIP"] == "":
             refreshStateandIP(client) 
+        instances[str(i)]["Activate"]='False'
         address="http://"+str(instances[str(i)]["PublicIP"])+":5001/memIndex/"+str(i)
         response = requests.get(address)          
         
@@ -119,6 +122,7 @@ def start_ec2_instance():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
             instances[str(i)]["Activate"]='True'
+            redirectCache()
             return('OK')
             break
         elif i==7:
@@ -135,7 +139,7 @@ def stop_ec2_instance():
             i=7
             instances[str(i)]["Activate"]='False'
             break
-    
+    redirectCache()
     ip=get_nth_ip(i)
     address="http://"+str(ip)+":5001/clear"
     response = requests.get(address)            
@@ -188,9 +192,9 @@ def get_nth_ip(n):
 def num_running():
     for i in range(8):
         if instances[str(i)]["Activate"]=='False':
-            
+            return int(i)
             break
-    return int(i)
+    return 8
 
 
 
@@ -255,6 +259,8 @@ def getAggregateStat30Mins():
         endTime = now - datetime.timedelta(minutes=i-1)
         miss = 0
         total= 0
+        numItem=0
+        size=0
         for i in range(8):
             
             miss+=client.get_metric_statistics(
@@ -285,7 +291,7 @@ def getAggregateStat30Mins():
                     Unit='Count',
                     )['Datapoints']['Sum']
             
-            numItem=client.get_metric_statistics(
+            numItem+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='numberItems',
                     Dimensions=[{
@@ -299,7 +305,7 @@ def getAggregateStat30Mins():
                     Unit='Count',
                     )['Datapoints']['Average']
             
-            size=client.get_metric_statistics(
+            size+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='currentSize',
                     Dimensions=[{
@@ -325,8 +331,59 @@ def getAggregateStat30Mins():
 
     
     
-    
+def redirectCache():
+    iplist=get_all_ip()
+    n = num_running()
+    caches=[]
+    for ip in iplist:
+        address="http://"+str(ip)+":5001/getall"
+        response = requests.post(address)
+        if response.json()!="Empty":
+            caches.append(response.json())
+    for cache in caches:
+        redirect(n,cache)        
     
     
 
-        
+def redirect(n,cache):
+    
+    for key in cache:
+        result = hashlib.md5(key.encode()).hexdigest()
+        if result < 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=0
+        elif result < 0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=1
+        elif result < 0x2FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=2
+        elif result < 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=3
+        elif result < 0x4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=4
+        elif result < 0x5FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=5
+        elif result < 0x6FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=6
+        elif result < 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=7
+        elif result < 0x8FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=8
+        elif result < 0x9FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=9
+        elif result < 0xAFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=10
+        elif result < 0xBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=11
+        elif result < 0xCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=12
+        elif result < 0xDFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=13
+        elif result < 0xEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+            partition=14
+        else: #result < 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+            partition=15
+        newid=partition%n
+        ip=get_nth_ip(newid)
+        data = {'key': key, 'value': cache[key]}
+        address="http://"+str(ip)+":5001/put"
+        response = requests.post(address, data=data)
+          

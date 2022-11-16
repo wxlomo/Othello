@@ -257,6 +257,8 @@ def getAggregateStat30Mins():
         endTime = now - datetime.timedelta(minutes=i-1)
         miss = 0
         total= 0
+        numItem=0
+        size=0
         for i in range(8):
             
             miss+=client.get_metric_statistics(
@@ -287,7 +289,7 @@ def getAggregateStat30Mins():
                     Unit='Count',
                     )['Datapoints']['Sum']
             
-            numItem=client.get_metric_statistics(
+            numItem+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='numberItems',
                     Dimensions=[{
@@ -301,7 +303,7 @@ def getAggregateStat30Mins():
                     Unit='Count',
                     )['Datapoints']['Average']
             
-            size=client.get_metric_statistics(
+            size+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='currentSize',
                     Dimensions=[{
@@ -330,11 +332,14 @@ def getAggregateStat30Mins():
 def redirectCache():
     iplist=get_all_ip()
     n = num_running()
+    caches=[]
     for ip in iplist:
         address="http://"+str(ip)+":5001/getall"
         response = requests.post(address)
         if response.json()!="Empty":
-            redirect(n,response.json())
+            caches.append(response.json())
+    for cache in caches:
+        redirect(n,cache)        
     
     
 
