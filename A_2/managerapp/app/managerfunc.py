@@ -80,8 +80,8 @@ def init_ec2_instances():
 
     client = boto3.client('ec2', 
                         region_name='us-east-1',
-                        aws_access_key_id=awsKey.aws_access_key_id,
-                        aws_secret_access_key=awsKey.aws_secret_access_key)
+                        aws_access_key_id=awsKey['aws_access_key_id'],
+                        aws_secret_access_key=awsKey['aws_secret_access_key'])
     if not refreshStateandIP(client):
         print("Fail retirving state form aws. Abandoning operation.")
         return False
@@ -178,8 +178,8 @@ def end_ec2_instances():
     if instances:
         client = boto3.client('ec2', 
                         region_name='us-east-1',
-                        aws_access_key_id=awsKey.aws_access_key_id,
-                        aws_secret_access_key=awsKey.aws_secret_access_key)
+                        aws_access_key_id=awsKey['aws_access_key_id'],
+                        aws_secret_access_key=awsKey['aws_secret_access_key'])
         if not refreshStateandIP(client):
             print("Fail retirving state form aws. Abandoning operation.")
             return "ERROR! Fail retirving state form aws. Abandoning operation."
@@ -230,8 +230,8 @@ def num_running():
 def getAggregateMissRate1mins(intervals=60, period=60):
     client = boto3.client('cloudwatch', 
                             region_name='us-east-1',
-                            aws_access_key_id=awsKey.aws_access_key_id,
-                            aws_secret_access_key=awsKey.aws_secret_access_key)
+                            aws_access_key_id=awsKey['aws_access_key_id'],
+                            aws_secret_access_key=awsKey['aws_secret_access_key'])
     startTime = datetime.datetime.utcnow() - datetime.timedelta(seconds=intervals)
     endTime = datetime.datetime.utcnow()
     miss = 0
@@ -277,8 +277,8 @@ def getAggregateStat30Mins():
     hitRate=[]
     client = boto3.client('cloudwatch', 
                         region_name='us-east-1',
-                        aws_access_key_id=awsKey.aws_access_key_id,
-                        aws_secret_access_key=awsKey.aws_secret_access_key)
+                        aws_access_key_id=awsKey['aws_access_key_id'],
+                        aws_secret_access_key=awsKey['aws_secret_access_key'])
     now=datetime.datetime.utcnow()
     for j in range (30,1,-1):
         startTime = now - datetime.timedelta(minutes=i)
