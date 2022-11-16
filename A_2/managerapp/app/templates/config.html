@@ -11,54 +11,90 @@
 {% block content %}
 <h1>Configuration</h1>
 <br>
-<form method="post" enctype="multipart/form-data" action="/putMemcacheConfig">
-    
-    <p class="lead"><label for="policy">Current memcache policy is {{poli}}. Set to :</label>
-    <select id="policy" name="policy" style="width: 120px; color:black" >
-        <option value="lru">LRU</option>
-        <option value="random">RANDOM</option>
-    </select></p>
-    <p class="lead"><label for="capacity">Current cache capacity is {{capa}} MB. Set to: </label>
-    <input type="number" id="capacity" style="width: 120px; color:black" name="capacity" value="{{capa}}" required> MB</p>
-    <p class="lead"><button type="submit" class="btn btn-default">Apply</button>
+
+<div id="accordion" class="panel-group">
+    <div class="card">
+        <div class="card-header" id="headingOne">
+            <h5 class="mb-0">
+                <button class="btn btn-lg btn-default collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="width: 300px !important;">
+          Memcache Settings:
+        </button>
+            </h5>
+        </div>
+
+        <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" action="/putMemcacheConfig">
+                    <p class="lead"><label for="policy">Current Memcache Policy is {{poli}}. Set to :</label>
+                        <select id="policy" name="policy" style="width: 120px; color:black">
+                          <option value="lru">LRU</option>
+                          <option value="random">RANDOM</option>
+                        </select></p>
+                    <p class="lead"><label for="capacity">Set Cache Capacity to: </label>
+                        <input type="number" id="capacity" style="width: 120px; color:black" name="capacity" value="{{capa}}" required> MB</p>
+                    <p class="lead"><button type="submit" class="btn btn-primary">Apply</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header" id="headingTwo">
+            <h5 class="mb-0">
+                <button class="btn btn-lg btn-default collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="width: 300px !important;">
+          Memcache Pool Settings:
+        </button>
+            </h5>
+        </div>
+        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+            <div class="card-body">
+                <p class="lead"><label for="Manual">Current Memcache Pool Size is {{pool}}.</label>
+
+                    <form action="/manualstartinstance" , method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-primary">Grow (+1)</button>
+                    </form>
+                    <form action="/manualstopinstance" , method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-primary">Shrink (-1)</button>
+                    </form>
+            </div>
+            <br>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header" id="headingThree">
+            <h5 class="mb-0">
+                <button class="btn btn-lg btn-default collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="width: 300px !important;">
+          Automatic Mode Settings:
+        </button>
+            </h5>
+        </div>
+        <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" action="/putScalerConfig">
+                    <p class="lead"><label>Current Auto Scaler is {{switch}}. Set to : </label>
+                        <select id="switch" style="width: 120px; color:black" name="switch"> </p>     
+                    <option value="1">On</option>
+                    <option value="0">Off</option>
+                </select></p>
+                    <p class="lead"><label>Set Max Miss Rate threshold to: </label>
+                        <input type="number" id="maxrate" style="width: 120px; color:black" name="maxrate" value="{{maxrate}}" required>% </p>
+                    <p class="lead"><label>Set Min Miss Rate threshold to: </label>
+                        <input type="number" id="minrate" style="width: 120px; color:black" name="minrate" value="{{minrate}}" required>% </p>
+                    <p class="lead"><label>Set Expand Ratio to: </label>
+                        <input type="number" id="expand" style="width: 120px; color:black" name="expand" value="{{expand}}" required> </p>
+                    <p class="lead"><label>Set Shrink Ratio to: </label>
+                        <input type="number" id="shrink" style="width: 120px; color:black" name="shrink" value="{{shrink}}" required> </p>
+                    <p class="lead"><button type="submit" class="btn btn-primary">Apply</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form action="/deleteData" , method="post" style="display: inline;">
+    <button type="submit" class="btn btn-danger" style="width: 149px !important;">Delete All App Data</button>
 </form>
-
-
-
-<p class="lead"><label for="Manual">Current memcache pool size is {{pool}}.</label>
-    
-        <form action="/manualstartinstance", method = "post">
-            <button type="submit" class="btn btn-default" >Grow (+1)</button>
-        </form>
-        <form action="/manualstopinstance", method = "post">
-            <button type="submit"class="btn btn-default" >Shrink (-1)</button>
-        </form>
-
-
-
-<form method="post" enctype="multipart/form-data" action="/putScalerConfig">
-    <p class="lead"><label>Automatic Mode Settings:</label>
-    <p class="lead"><label>Current Auto Scaler is {{switch}}. Set to : </label>
-    <select id="switch" style="width: 120px; color:black" name="switch"> </p>     
-        <option value="1">On</option>
-        <option value="0">Off</option>
-    </select></p>   
-    <p class="lead"><label>Set Max Miss Rate threshold to: </label>
-    <input type="number" id="maxrate" style="width: 120px; color:black" name="maxrate" value="{{maxrate}}" required>% </p>
-    <p class="lead"><label>Set Min Miss Rate threshold to: </label>
-    <input type="number" id="minrate" style="width: 120px; color:black" name="minrate" value="{{minrate}}" required>% </p>
-    <p class="lead"><label>Set Expand Ratio to: </label>
-    <input type="number" id="expand" style="width: 120px; color:black" name="expand" value="{{expand}}" required> </p>
-    <p class="lead"><label>Set Shrink Ratio to: </label>
-    <input type="number" id="shrink" style="width: 120px; color:black" name="shrink" value="{{shrink}}" required> </p> 
-    <p class="lead"><button type="submit" class="btn btn-default">Apply</button>
-</form>
-
-<p class="lead"><label>Cleaning:</label>
-<button class="btn btn-default" onclick='/deleteData'>Delete All App Data</button>
-
-<form action="/clearallcache", method = "post">
-    <button type="submit" class="btn btn-default" >Clear All Cache</button>
+<form action="/clearallcache" , method="post" style="display: inline;">
+    <button type="submit" class="btn btn-danger" style="width: 149px !important;">Clear All Cache</button>
 </form>
 
 {% endblock content %}
