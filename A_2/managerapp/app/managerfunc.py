@@ -112,7 +112,7 @@ def init_ec2_instances():
                 KeyName="ECE1779_A2_public",
                 SecurityGroupIds=[SecurityGroupID],
                 SubnetId=SubnetID,
-                user_data=user_data_script,
+                UserData=user_data_script,
                 TagSpecifications=[{'ResourceType': 'instance',
                                     'Tags': [
                                         {
