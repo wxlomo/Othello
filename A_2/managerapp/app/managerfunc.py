@@ -14,25 +14,8 @@ ami = "ami-0e66a08f7ef7181c4"
 VPCID='vpc-042054f0f945d031c'
 SubnetID='subnet-0c43635379007a839'
 SecurityGroupID='sg-0bd84a8e573f6d497'
-user_data_script="""Content-Type: multipart/mixed; boundary="//"
-MIME-Version: 1.0
-
---//
-Content-Type: text/cloud-config; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="cloud-config.txt"
-
-#cloud-config
-cloud_final_modules:
-- [scripts-user, always]
-
---//
+user_data_script="""
 Content-Type: text/x-shellscript; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="userdata.txt"
-
 #!/bin/bash
 cd ECE1779-Group9-Project-Code/A_2/memcache && gunicorn --bind 0.0.0.0:5001 --workers 1 run:mem
 --//
