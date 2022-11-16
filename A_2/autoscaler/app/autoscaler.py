@@ -63,3 +63,26 @@ def updatestat():
 # status page render
 def page():
     return "Scaler Is Ready"
+
+@scaler.route('/testshrink')
+def testshrink():
+    response=requests.get("http://localhost:5002/numrunning")
+    num=int(response.json())
+    new=max(1,int(num*SHRINK))
+    if new>1 and new==num:
+        new-=1
+    add=num-new
+    for i in range(add):
+        response=requests.get("http://localhost:5002/stopinstance")
+        
+        
+@scaler.route('/testgrow')
+def testshrink():
+    response=requests.get("http://localhost:5002/numrunning")
+    num=int(response.json())
+    new=max(1,int(num*EXPAND))
+    if new>1 and new==num:
+        new-=1
+    add=num-new
+    for i in range(add):
+        response=requests.get("http://localhost:5002/startinstance")
