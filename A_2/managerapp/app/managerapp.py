@@ -145,8 +145,8 @@ def get_scalerconfig():
     """
     scalerconfig = {
       'scalerswitch': scalerswitch,
-      'minrate': minrate,
-      'maxrate': maxrate,
+      'minrate': float(int(minrate)/100),
+      'maxrate': float(int(maxrate)/100),
       'expand': expand,
       'shrink': shrink
     }
