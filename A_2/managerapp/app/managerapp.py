@@ -316,7 +316,10 @@ def delete_data():
       str: the arguments for the Jinja template
     """
     manager.logger.debug('\n* Deleting data')
-    response = requests.get("http://localhost:5001/deleteData")
+    try:
+      response = requests.get("http://localhost:5000/api/teardown")
+    except Exception as e:
+      traceback.print_exc()
     manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
