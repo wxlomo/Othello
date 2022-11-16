@@ -262,8 +262,8 @@ def getAggregateStat30Mins():
                         aws_secret_access_key=awsKey['aws_secret_access_key'])
     now=datetime.datetime.utcnow()
     for j in range (30,1,-1):
-        startTime = now - datetime.timedelta(minutes=i)
-        endTime = now - datetime.timedelta(minutes=i-1)
+        startTime = now - datetime.timedelta(minutes=j)
+        endTime = now - datetime.timedelta(minutes=j-1)
         miss = 0
         total= 0
         numItem=0
