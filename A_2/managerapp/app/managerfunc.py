@@ -14,6 +14,31 @@ ami = "ami-080ff70d8f5b80ba5"
 VPCID='vpc-042054f0f945d031c'
 SubnetID='subnet-0c43635379007a839'
 SecurityGroupID='sg-0bd84a8e573f6d497'
+user_data_script="""Content-Type: multipart/mixed; boundary="//"
+MIME-Version: 1.0
+
+--//
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="cloud-config.txt"
+
+#cloud-config
+cloud_final_modules:
+- [scripts-user, always]
+
+--//
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="userdata.txt"
+
+#!/bin/bash
+cd ECE1779-Group9-Project-Code/A_2
+chmod +x mem.sh
+./mem.sh
+--//
+"""
 def refreshStateandIP(client):
     """
         Refresh instacne with current state from AWS.
@@ -87,6 +112,7 @@ def init_ec2_instances():
                 KeyName="ECE1779_A2_public",
                 SecurityGroupIds=[SecurityGroupID],
                 SubnetId=SubnetID,
+                user_data=user_data_script,
                 TagSpecifications=[{'ResourceType': 'instance',
                                     'Tags': [
                                         {
