@@ -15,9 +15,6 @@ s3 = boto3.client('s3',
                         region_name='us-east-1',
                         aws_access_key_id=awsKey['aws_access_key_id'],
                         aws_secret_access_key=awsKey['aws_secret_access_key'])
-rds = boto3.client('rds', 
-                        region_name='us-east-1',
-                        aws_access_key_id=awsKey['aws_access_key_id'],
-                        aws_secret_access_key=awsKey['aws_secret_access_key'])
+# rds = boto3.client('rds')
 
 from . import frontend
