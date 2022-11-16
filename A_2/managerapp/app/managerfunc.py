@@ -10,7 +10,7 @@ awsKey = config.awsKey
 import hashlib
 
 instances = {}
-ami = "ami-080ff70d8f5b80ba5" 
+ami = "ami-0e66a08f7ef7181c4" 
 VPCID='vpc-042054f0f945d031c'
 SubnetID='subnet-0c43635379007a839'
 SecurityGroupID='sg-0bd84a8e573f6d497'
