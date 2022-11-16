@@ -6,10 +6,10 @@
  * Date: Oct. 11, 2022
 """
 from . import front, config, s3
-from memfunc import memfunc
+# from memfunc import memfunc
 from flask import render_template, request, g, escape
 from werkzeug.utils import secure_filename
-import memfunc
+# import memfunc
 import mysql.connector
 import requests
 import base64
@@ -103,8 +103,11 @@ def memcache_request(request_str, key, data=''):
           requests.Response object: the response of the request, none if error
     """
     request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
-    request_pooling = request_partition % memfunc.num_running()
-    pool_ip = memfunc.get_nth_ip(request_pooling)
+    response = requests.post("http://localhost:5002/numrunning")
+    numrunning=response.json()
+    request_pooling = request_partition % numrunning
+    response = requests.post("http://localhost:5002/ip/"+str(request_pooling))
+    pool_ip = response.json()
     try:
         response = requests.post(pool_ip + str(request_str), data=data)
         return response

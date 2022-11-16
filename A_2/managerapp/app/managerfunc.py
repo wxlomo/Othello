@@ -374,42 +374,44 @@ def redirectCache():
 def redirect(n,cache):
     
     for key in cache:
-        result = hashlib.md5(key.encode()).hexdigest()
-        if result < 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=0
-        elif result < 0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=1
-        elif result < 0x2FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=2
-        elif result < 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=3
-        elif result < 0x4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=4
-        elif result < 0x5FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=5
-        elif result < 0x6FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=6
-        elif result < 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=7
-        elif result < 0x8FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=8
-        elif result < 0x9FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=9
-        elif result < 0xAFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=10
-        elif result < 0xBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=11
-        elif result < 0xCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=12
-        elif result < 0xDFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=13
-        elif result < 0xEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
-            partition=14
-        else: #result < 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-            partition=15
-        newid=partition%n
-        ip=get_nth_ip(newid)
+        request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
+        request_pooling = request_partition % n
+        ip=get_nth_ip(request_pooling)
         data = {'key': key, 'value': cache[key]}
         address="http://"+str(ip)+":5001/put"
         response = requests.post(address, data=data)
+        # result = hashlib.md5(key.encode()).hexdigest()
+        # if result < 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=0
+        # elif result < 0x1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=1
+        # elif result < 0x2FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=2
+        # elif result < 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=3
+        # elif result < 0x4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=4
+        # elif result < 0x5FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=5
+        # elif result < 0x6FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=6
+        # elif result < 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=7
+        # elif result < 0x8FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=8
+        # elif result < 0x9FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=9
+        # elif result < 0xAFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=10
+        # elif result < 0xBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=11
+        # elif result < 0xCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=12
+        # elif result < 0xDFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=13
+        # elif result < 0xEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:
+        #     partition=14
+        # else: #result < 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        #     partition=15
+        
           
