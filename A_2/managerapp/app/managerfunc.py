@@ -34,9 +34,7 @@ Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment; filename="userdata.txt"
 
 #!/bin/bash
-cd ECE1779-Group9-Project-Code/A_2
-chmod +x mem.sh
-./mem.sh
+cd ECE1779-Group9-Project-Code/A_2/memcache && gunicorn --bind 0.0.0.0:5001 --workers 1 run:mem
 --//
 """
 def refreshStateandIP(client):
