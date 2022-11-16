@@ -8,13 +8,13 @@ import time
 from collections import OrderedDict
 from flask import request, g
 from . import mem,config
-from config import awsKey
+
 from flask import jsonify,json
 import boto3
 global cache
 global memcacheStatistics
 global memcacheConfig
-
+awsKey=config.awsKey
 cache = OrderedDict()
 memcacheConfig = {'capacity': 4,
                   'policy': 'LRU'}  # default setting, get real time config from db
