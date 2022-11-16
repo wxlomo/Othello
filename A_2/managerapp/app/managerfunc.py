@@ -109,7 +109,7 @@ def init_ec2_instances():
                 MinCount=1,
                 MaxCount=1,
                 InstanceType="t2.micro",
-                KeyName="ECE1779_A2_public",
+                # KeyName="ECE1779_A2_public",
                 SecurityGroupIds=[SecurityGroupID],
                 SubnetId=SubnetID,
                 UserData=user_data_script,
