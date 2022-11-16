@@ -1,5 +1,5 @@
 s3_config = {
-    'name': 'simplegallery',
+    'name': 'simplegallery485247',
     'region_name': 'us-east-1'
 }
 
