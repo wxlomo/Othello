@@ -353,13 +353,14 @@ def redirectCache():
     iplist=get_all_ip()
     n = num_running()
     caches=[]
-    for ip in iplist:
-        address="http://"+str(ip)+":5001/getall"
-        response = requests.post(address)
-        if response.json()!="Empty":
-            caches.append(response.json())
-    for cache in caches:
-        redirect(n,cache)        
+    if n !=0:
+        for ip in iplist:
+            address="http://"+str(ip)+":5001/getall"
+            response = requests.post(address)
+            if response.json()!="Empty":
+                caches.append(response.json())
+        for cache in caches:
+            redirect(n,cache)        
     
     
 
