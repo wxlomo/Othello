@@ -112,11 +112,11 @@ def memcache_request(request_str, key, data=''):
         pool_ip = str(response.json())
         try:
             response = requests.post(pool_ip + str(request_str), data=data)
-            return response
+            return response.json()
         except Exception as error:
             front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
             return None
-    return jsonify('Unknown key')
+    return 'Unknown key'
 
 def is_image(file):
     """Check if the file format is an image
@@ -192,7 +192,7 @@ def get_image():
     
     if not response:
         return render_template('result.html', result='Something Wrong :(')
-    if response.json() == 'Unknown key':  # if not in memcache
+    if response == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
@@ -213,7 +213,7 @@ def get_image():
         if not response:
             return render_template('result.html', result='Something Wrong :(')
     else:  # if in memcache
-        image = response.json()
+        image = response
     return render_template('retrieve.html', image='data:image/*; base64, {0}'.format(image), key=escape(key))
 
 
@@ -251,7 +251,7 @@ def put_image():
     
     if not response:
         return render_template('result.html', result='Something Wrong :(')
-    if response.json() == 'Unknown key':  # if not in memcache
+    if response == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return render_template('result.html', result='Something Wrong :(')
@@ -329,7 +329,7 @@ def put_image_api():
     front.logger.debug(response.text)
     if not response:
         return render_template('result.html', result='Something Wrong :(')
-    if response.json() == 'Unknown key':  # if not in memcache
+    if response == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return {
@@ -433,7 +433,7 @@ def get_image_api(key_value):
     front.logger.debug(response.text)
     if not response:
         return render_template('result.html', result='Something Wrong :(')
-    if response.json() == 'Unknown key':  # if not in memcache
+    if response == 'Unknown key':  # if not in memcache
         cursor = db_wrapper('get_image', key)
         if not cursor:
             return {
@@ -472,7 +472,7 @@ def get_image_api(key_value):
         if not response:
             return render_template('result.html', result='Something Wrong :(')
     else:  # the key is in memcache
-        image = response.json()
+        image = response
     return {
         'success': 'true',
         'content': image
