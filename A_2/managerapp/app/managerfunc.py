@@ -233,7 +233,7 @@ def getAggregateMissRate1mins(intervals=60, period=60):
             miss+=response['Datapoints'][0]['Sum']
         response=client.get_metric_statistics(
                 Namespace='ece1779/memcache',
-                MetricName='total',
+                MetricName='numberRequests',
                 Dimensions=[{
                         "Name": "instance",
                         "Value": str(i)
