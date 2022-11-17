@@ -106,16 +106,17 @@ def memcache_request(request_str, key, data=''):
     response = requests.get("http://localhost:5002/numrunning")
     print(response.text)
     numrunning=response.json()
-    request_pooling = request_partition % int(numrunning)
-    response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
-    pool_ip = str(response.json())
-    try:
-        response = requests.post(pool_ip + str(request_str), data=data)
-        return response
-    except Exception as error:
-        front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
-        return None
-
+    if(numrunning!=0):
+        request_pooling = request_partition % int(numrunning)
+        response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
+        pool_ip = str(response.json())
+        try:
+            response = requests.post(pool_ip + str(request_str), data=data)
+            return response
+        except Exception as error:
+            front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
+            return None
+    return None
 
 def is_image(file):
     """Check if the file format is an image

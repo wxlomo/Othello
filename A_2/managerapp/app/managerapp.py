@@ -217,7 +217,7 @@ def get_1minmiss():
     
   
 #return number of instance running for auto scaler to use
-@manager.route('/numrunning ')
+@manager.route('/numrunning')
 def get_num_running():
     """Configuration page render.
 

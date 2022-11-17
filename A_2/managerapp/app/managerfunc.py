@@ -215,7 +215,7 @@ def getAggregateMissRate1mins(intervals=60, period=60):
     total= 0
     for i in range(8):
         
-        miss+=client.get_metric_statistics(
+        response=client.get_metric_statistics(
                 Namespace='ece1779/memcache',
                 MetricName='miss',
                 Dimensions=[{
@@ -224,12 +224,13 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                     }],
                 StartTime = startTime,
                 EndTime = endTime,
-                Period=period,
+                Period=60,
                 Statistics=['Sum'],
                 Unit='Count',
-                )['Datapoints'][0]['Sum']
-        
-        total+=client.get_metric_statistics(
+                )
+        if response['Datapoints']:
+            miss+=response['Datapoints'][0]['Sum']
+        response=client.get_metric_statistics(
                 Namespace='ece1779/memcache',
                 MetricName='total',
                 Dimensions=[{
@@ -238,10 +239,12 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                     }],
                 StartTime = startTime,
                 EndTime = endTime,
-                Period=period,
+                Period=60,
                 Statistics=['Sum'],
                 Unit='Count',
-                )['Datapoints'][0]['Sum']
+                )
+        if response['Datapoints']:
+            total+=response['Datapoints'][0]['Sum']
             
     return miss/total
     
