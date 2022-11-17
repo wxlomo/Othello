@@ -398,7 +398,7 @@ def statistic5secs():
                             'Name': 'instance',
                             'Value': str(index)
                         }],
-                    'Unit': 'Mb',
+                    'Unit': 'Megabites',
                     'Value': currentSize}],
             Namespace = 'ece1779/memcache')
     
