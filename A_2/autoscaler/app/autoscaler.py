@@ -19,6 +19,7 @@ def threadedUpdate():
     thread.start()
     
 # update every 1 mins
+@scaler.route('/stat')
 def updatestat():
 
     while True:
@@ -53,7 +54,8 @@ def updatestat():
                 add=num-new
                 for i in range(add):
                     response=requests.get("http://localhost:5002/stopinstance")
-                    
+            return [run,EXPAND,SHRINK,MAXMISS,MINMISS,num,new]
+        return [run,EXPAND,SHRINK,MAXMISS,MINMISS]
 @scaler.route('/')
 # status page render
 def page():
