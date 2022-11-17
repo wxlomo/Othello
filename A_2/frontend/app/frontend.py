@@ -104,7 +104,7 @@ def memcache_request(request_str, key, data=''):
     """
     request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
     response = requests.get("http://localhost:5002/numrunning")
-    print(response.text)
+    print(response.json())
     numrunning=response.json()
     if(numrunning!=0):
         request_pooling = request_partition % int(numrunning)
