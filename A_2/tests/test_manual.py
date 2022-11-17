@@ -155,15 +155,17 @@ def config_pool(mode, time=1):
         if mode == 'shrink':
             for it in range(time):
                 response = requests.post(manager_url + "/stopinstance", verify=False)
+                if response.status_code == 500:
+                    raise Exception('front-end failure')
         elif mode == 'grow':
             for it in range(time):
                 response = requests.post(manager_url + "/startinstance", verify=False)
+                if response.status_code == 500:
+                    raise Exception('front-end failure')
         else:
             raise ValueError('No such mode')
     except Exception as error:
         print('* Error: ' + str(error))
-    if response.status_code == 500:
-        raise Exception('front-end failure')
 
 
 def latency_test(request_number, read_ratio):
@@ -287,11 +289,11 @@ def throughput_figure(start_pool_size, end_pool_size, read_ratio=0.5):
             for time_window in time_windows:
                 data.append([time_window, throughput_test(time_window, read_ratio), current_pool_size])
     df = pd.DataFrame(data, columns=['Units of time (seconds)', 'Maximum number of requests', 'Memcache pool size'])
-    fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue='Memcache pool size',ci=None)
+    fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue='Memcache pool size', ci=None)
     fig.fig.savefig('img/throughput_' + str(read_ratio) + '.png')
 
 
-def test_manual(type, start_pool_size, end_pool_size):
+def test_manual(ttype, start_pool_size, end_pool_size):
     """Run the performance test
 
         Args:
@@ -302,9 +304,10 @@ def test_manual(type, start_pool_size, end_pool_size):
         Returns:
             n/a
     """
-    if type == 'latency':
+    print('Executing ' + str(ttype) + ' test from ' + str(start_pool_size) + ' nodes to ' + str(end_pool_size) + ' nodes.')
+    if ttype == 'latency':
         latency_figure(start_pool_size, end_pool_size)
-    elif type == 'throughput':
+    elif ttype == 'throughput':
         throughput_figure(start_pool_size, end_pool_size)
     else:
         raise ValueError('No such type of test')
