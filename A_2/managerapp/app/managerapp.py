@@ -29,8 +29,8 @@ policy = 'lru'
 capacity= 4
 minrate='15'
 maxrate='75' 
-expand='1' 
-shrink='1'
+expand='1.0' 
+shrink='1.0'
 scalerswitch='0'
 
 
