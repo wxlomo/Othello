@@ -1,0 +1,17 @@
+<!--
+ * retrieve.html
+ * html code for the result page of the gallery retrieving
+ * Editor: Weixuan Yang
+ * Date: October 04, 2022
+-->
+
+{% extends "layout.html" %}
+{% block title %}Retrieve{% endblock title %}
+{% block content %}
+<h1>We Find Your Image :)</h1>
+<br>
+<img src="{{image}}" style="max-width: 800px; max-height: 550px; width: auto; height: auto">
+<p class="lead">With key: {{key}}</p>
+<br>
+<a href="{{url_for('get_home')}} " class="btn btn-default ">Return</a>
+{% endblock content %}
