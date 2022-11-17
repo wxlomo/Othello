@@ -168,7 +168,7 @@ def put_memcacheconfig():
     global capacity
     try:
       ipList = managerfunc.get_all_ip()
-      print(ipList)
+   
     except Exception as e:
       traceback.print_exc()
     policy = request.form['policy']
@@ -324,8 +324,10 @@ def delete_data():
     manager.logger.debug(response.text)
     manager.logger.debug('\n* Clearing memcache')
     
-    ipList = managerfunc.get_all_ip()
-    
+    try:
+      ipList = managerfunc.get_all_ip()
+    except Exception as e:
+      traceback.print_exc()
     for eachIP in ipList:
         response = requests.get("http://"+eachIP+":5001/clear")
     manager.logger.debug(response.text)

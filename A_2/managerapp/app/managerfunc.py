@@ -177,9 +177,7 @@ def end_ec2_instances():
 def get_all_ip():
     """Returns all known IPs of all EC2 memcaches for frontend to use."""
     ipList = []
-    if not refreshStateandIP():
-        print("Fail retirving state form aws. Abandoning operation.")
-        return
+
     if instances:
         for instance in instances.values():
             if instance["Status"]=="running"  and instance["PublicIP"] != "": #and instance["Activate"]=="True"
@@ -188,9 +186,7 @@ def get_all_ip():
 
 # @manager.route('/ip/<n>')  response the return of this func
 def get_nth_ip(n):
-    if not refreshStateandIP():
-        print("Fail retirving state form aws. Abandoning operation.")
-        return
+
     if instances[str(n)]["Status"]=="running" and instances[str(n)]["Activate"]=="True"and instances[str(n)]["PublicIP"] != "":
         return instances[str(n)]["PublicIP"]
     return "Error! Failed retrive ip"
