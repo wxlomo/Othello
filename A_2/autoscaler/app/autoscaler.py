@@ -16,12 +16,12 @@ def threadedUpdate():
 def auto():
     while True: 
         time.sleep(60)
-        stat()
+        autoscale()
 
 
 # scale
 @scaler.route('/autonow')
-def stat():
+def autoscale():
     # Get autoscaler setting from manager
     response = requests.get("http://localhost:5002/scalerconfig")
     result = response.json()
