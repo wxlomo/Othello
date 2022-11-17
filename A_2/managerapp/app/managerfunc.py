@@ -116,8 +116,8 @@ def init_ec2_instances():
         while instances[str(i)]["Status"]!="running" and instances[str(i)]["PublicIP"] == "":
             refreshStateandIP(client) 
         instances[str(i)]["Activate"]='False'
-        # address="http://"+str(instances[str(i)]["PublicIP"])+":5001/memIndex/"+str(i)
-        # response = requests.get(address)          
+        address="http://"+str(instances[str(i)]["PublicIP"])+":5001/memIndex/"+str(i)
+        response = requests.get(address)          
         
     return True
     
