@@ -270,7 +270,8 @@ def getAggregateStat30Mins():
         size=0
         for i in range(8):
             
-            miss+=client.get_metric_statistics(
+            
+            response=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='miss',
                     Dimensions=[{
@@ -282,9 +283,10 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Sum'],
                     Unit='Count',
-                    )['Datapoints'][0]['Sum']
-            
-            total+=client.get_metric_statistics(
+                    )
+            if response['Datapoints']:
+                miss+=response['Datapoints'][0]['Sum']
+            response=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='total',
                     Dimensions=[{
@@ -296,9 +298,10 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Sum'],
                     Unit='Count',
-                    )['Datapoints'][0]['Sum']
-            
-            numItem+=client.get_metric_statistics(
+                    )
+            if response['Datapoints']:
+                total+=response['Datapoints'][0]['Sum']
+            response=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='numberItems',
                     Dimensions=[{
@@ -310,9 +313,11 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Average'],
                     Unit='Count',
-                    )['Datapoints'][0]['Average']
+                    )
+            if response['Datapoints']:
+                numItem+=response['Datapoints'][0]['Average']
             
-            size+=client.get_metric_statistics(
+            response=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
                     MetricName='currentSize',
                     Dimensions=[{
@@ -324,7 +329,9 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Average'],
                     Unit='Count',
-                    )['Datapoints'][0]['Average']
+                    )
+            if response['Datapoints']:
+                size+=response['Datapoints'][0]['Average']
                 
         missRate.append(miss/total)
         hitRate.append(1-miss/total)
