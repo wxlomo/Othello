@@ -321,6 +321,14 @@ def delete_data():
     except Exception as e:
       traceback.print_exc()
     manager.logger.debug(response.text)
+    manager.logger.debug('\n* Clearing memcache')
+    try:
+      ipList = managerfunc.get_all_ip()
+    except Exception as e:
+      traceback.print_exc()
+    for eachIP in ipList:
+        response = requests.get("http://"+eachIP+":5001/clear")
+    manager.logger.debug(response.text)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
 
