@@ -111,7 +111,7 @@ def memcache_request(request_str, key, data=''):
         response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
         pool_ip = str(response.json())
         try:
-            response = requests.post(pool_ip + str(request_str), data=data)
+            response = requests.post(pool_ip+":5000/" + str(request_str), data=data)
             return response.json()
         except Exception as error:
             front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
