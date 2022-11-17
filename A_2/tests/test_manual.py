@@ -28,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # The http address regards the deployed web application
 base_url = "http://54.235.28.157:5000/"
 # The http address regards the manager application
-manager_url = "http://54.235.28.157:5000/"
+manager_url = "http://54.235.28.157:5002/"
 
 key = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 request_numbers = list(range(1, 52, 10))
