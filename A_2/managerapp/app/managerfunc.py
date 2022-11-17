@@ -150,7 +150,7 @@ def stop_ec2_instance():
     ip=get_nth_ip(i)
     print(ip)
     requests.get("http://"+str(ip)+":5001/clear")
-              
+    return ('OK')     
 #use when manager end
 def end_ec2_instances():
     """
