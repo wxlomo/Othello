@@ -67,7 +67,7 @@ def stat():
 # status page render
 def page():
     global t
-    return t
+    return str(t)
 
 @scaler.route('/testshrink')
 def testshrink():
