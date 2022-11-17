@@ -335,7 +335,7 @@ def delete_data():
   
 
 
-@manager.route('/clearallcache')
+@manager.route('/clearallcache', methods=['POST'])
 def clear_all_cache():
     """Clear the memcache.
 
