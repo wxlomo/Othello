@@ -55,7 +55,29 @@ def draw_charts(stats:list, y_label:str, title:str):
     src = 'data:image/png;base64,{}'.format(data)
     plt.close()
     return src
-  
+
+def draw_charts_percentage(stats:list, y_label:str, title:str):
+    """Draw the charts for the statistics.
+
+    Args:
+      stats (list): the list of statistics.
+
+    Returns:
+      encoded_img (str): the encoded image of the chart.
+    """
+    # draw the charts
+    x1 = [x for x in range(len(stats))]
+    l1 = plt.plot(x1, stats, 'r')
+    plt.xlabel('Time')
+    plt.ylabel(y_label)
+    plt.title(title)
+    sio = BytesIO()
+    plt.savefig(sio, format='png')
+    #base64encode
+    data = base64.encodebytes(sio.getvalue()).decode()
+    src = 'data:image/png;base64,{}'.format(data)
+    plt.close()
+    return src 
   
 @manager.before_first_request
 def before_first_request():
@@ -306,11 +328,7 @@ def manualstopinstance():
     print(response, scalerswitch)
     return render_template('result.html', result='Your Request Has Been Processed :)')
   
-############################################################################################
-############################################################################################
-#todo: delete all data
-############################################################################################
-############################################################################################
+
 
 @manager.route('/deleteData', methods=['POST'])
 def delete_data():
