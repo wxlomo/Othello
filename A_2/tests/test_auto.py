@@ -28,7 +28,7 @@ base_url = "http://54.235.28.157:5000/"
 # The http address regards the manager application
 manager_url = "http://54.235.28.157:5002/"
 
-key = [0, 1, 2, 3, 4, 5, 6, 7]
+key = range(10)
 sns.set_theme(style="whitegrid")
 
 
