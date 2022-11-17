@@ -148,6 +148,7 @@ def stop_ec2_instance():
             break
     redirectCache()
     ip=get_nth_ip(i)
+    print(ip)
     requests.get("http://"+str(ip)+":5001/clear")
               
 #use when manager end
