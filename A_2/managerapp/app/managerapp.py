@@ -68,8 +68,8 @@ def draw_charts_percentage(stats:list, y_label:str, title:str):
     """
     # draw the charts
     x1 = [x for x in range(len(stats))]
-    l1 = plt.plot(x1, stats, 'r')
-    plt.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=2))
+    l1 = plt.plot(x1, stats, 'r')   
+    plt.gca().yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=1))
     plt.xlabel('Time')
     plt.ylabel(y_label)
     plt.title(title)
@@ -102,12 +102,12 @@ def get_home():
     # stat1 = [x for x in range(30)]
     # stat2 = [2*x for x in range(50)]
     # stat3 = [3*x for x in range(30)]
-    # stat4 = [4*x for x in range(30)]
+    # stat4 = [x*0.01 for x in range(30)]
     # stat5 = [5*x for x in range(30)]
-    # results = [stat1, stat2, stat3, stat4, stat5]
-    num=0
+    # stats = [stat1, stat2, stat3, stat4, stat5]
+    # num=0
     stats = managerfunc.getAggregateStat30Mins()
-    # print(stats)
+    print(stats)
     num = managerfunc.num_running()
     for i in [0,1,2]:    
         result.append((draw_charts(stats[i], y_label[i], title[i])))
