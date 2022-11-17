@@ -24,13 +24,18 @@ def threadedUpdate():
 
 def auto():
     while True: 
+        global t
+        t=2
         time.sleep(60)
+        t=3
         stat()
     
                     
                     
 @scaler.route('/autonow')
 def stat():
+    global t
+    t=4
     response=requests.get("http://localhost:5002/scalerconfig")
     result=response.json()
     run=int(result['scalerswitch'])
