@@ -24,10 +24,7 @@ def threadedUpdate():
 
 def auto():
     while True: 
-        global t
-        t=2
         time.sleep(60)
-        t=3
         stat()
     
                     
@@ -53,7 +50,7 @@ def stat():
         response=requests.get("http://localhost:5002/numrunning")
         num=int(response.json())
         if missrate>MAXMISS:
-            new=max(8,int(num*EXPAND))
+            new=min(8,int(num*EXPAND))
             if new<8 and new==num:
                 new+=1
             add=new-num
