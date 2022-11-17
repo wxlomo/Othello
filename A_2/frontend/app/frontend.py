@@ -81,7 +81,7 @@ def db_wrapper(query_type, arg1='', arg2=''):
         front.logger.debug('\n* Executing query: ' + str(query))
         cursor = db.cursor()
         cursor.execute(query)
-        if query_type == 'put_image' or query_type == 'put_image_exist' or query_type == 'put_config':
+        if query_type != 'get_key' and query_type != 'get_image':
             db.commit()
         return cursor
     except Exception as error:
