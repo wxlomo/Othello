@@ -3,7 +3,7 @@ s3_config = {
     'region_name': 'us-east-1'
 }
 
-rds_config={
+rds_config = {
     'region_name': 'us-east-1',
     'user': 'root',
     'host': 'gallery.cv7c0nmmjp2t.us-east-1.rds.amazonaws.com',
@@ -12,7 +12,7 @@ rds_config={
     'password': 'ece1779pass'
 }
 
-awsKey={
+awsKey = {
             'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
             'aws_secret_access_key' : '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'
         }
