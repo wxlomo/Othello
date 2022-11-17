@@ -104,13 +104,15 @@ def get_home():
     # stat3 = [3*x for x in range(30)]
     # stat4 = [4*x for x in range(30)]
     # stat5 = [5*x for x in range(30)]
-    # stats = [stat1, stat2, stat3, stat4, stat5]
-    # num=0
+    # results = [stat1, stat2, stat3, stat4, stat5]
+    num=0
     stats = managerfunc.getAggregateStat30Mins()
     # print(stats)
     num = managerfunc.num_running()
-    for i in [0,1,2,3,4]:    
+    for i in [0,1,2]:    
         result.append((draw_charts(stats[i], y_label[i], title[i])))
+    for i in [3,4]:
+        result.append((draw_charts_percentage(stats[i], y_label[i], title[i])))
         
     return render_template('index.html',numofinstance=num, src1=result[0], src2=result[1], src3=result[2], src4=result[3], src5=result[4])
 
