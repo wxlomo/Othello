@@ -491,11 +491,11 @@ def teardown_api():
     front.logger.debug('\n* Deleting images from s3...')
     try:
         response = s3.list_objects_v2(Bucket=config.s3_config['name'])
-        if 'Content' in response:
+        if 'Content' in response:  # bucket is not empty
             for obj in response['Content']:
                 front.logger.debug('  Deleting: ' + str(obj['Key']))
                 s3.delete_objects(Bucket=config.s3_config['name'], Delete={'Objects': [{'Key': obj['Key']}]})
-        else:
+        else:  # bucket is empty
             front.logger.debug('  Bucket is empty')
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
