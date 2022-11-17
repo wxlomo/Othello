@@ -54,7 +54,9 @@ def updatestat():
                 add=num-new
                 for i in range(add):
                     response=requests.get("http://localhost:5002/stopinstance")
-@scaler.route('/stat')
+                    
+                    
+@scaler.route('/autonow')
 def stat():
     response=requests.get("http://localhost:5002/scalerconfig")
     result=response.json()
