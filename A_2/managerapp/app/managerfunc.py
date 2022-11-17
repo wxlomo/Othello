@@ -188,7 +188,7 @@ def get_all_ip():
 # @manager.route('/ip/<n>')  response the return of this func
 def get_nth_ip(n):
 
-    if instances[str(n)]["Status"]=="running" and instances[str(n)]["Activate"]=="True"and instances[str(n)]["PublicIP"] != "":
+    if instances[str(n)]["Status"]=="running" and instances[str(n)]["PublicIP"] != "": #instances[str(n)]["Activate"]=="True"
         return instances[str(n)]["PublicIP"]
     return "Error! Failed retrive ip"
 
