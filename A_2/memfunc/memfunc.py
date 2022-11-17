@@ -8,10 +8,10 @@ from config import awsKey
 import hashlib
 
 instances = {}
-ami = "ami-080ff70d8f5b80ba5" 
-VPCID='vpc-042054f0f945d031c'
-SubnetID='subnet-0c43635379007a839'
-SecurityGroupID='sg-0bd84a8e573f6d497'
+ami = config.ami
+VPCID = config.VPCID
+SubnetID = config.SubnetID
+SecurityGroupID = config.SecurityGroupID
 def refreshStateandIP(client):
     """
         Refresh instacne with current state from AWS.
