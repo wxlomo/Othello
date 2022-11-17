@@ -7,7 +7,7 @@
 """
 from . import front, config, s3
 # from memfunc import memfunc
-from flask import render_template, request, g, escape
+from flask import render_template, request, g, escape,jsonify
 from werkzeug.utils import secure_filename
 # import memfunc
 import mysql.connector
@@ -104,7 +104,7 @@ def memcache_request(request_str, key, data=''):
     """
     request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
     response = requests.get("http://localhost:5002/numrunning")
-    print(response.json())
+    
     numrunning=response.json()
     if(numrunning!=0):
         request_pooling = request_partition % int(numrunning)
@@ -116,7 +116,7 @@ def memcache_request(request_str, key, data=''):
         except Exception as error:
             front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
             return None
-    return None
+    return jsonify('Unknown key')
 
 def is_image(file):
     """Check if the file format is an image
@@ -187,8 +187,9 @@ def get_image():
     """
     key = request.form['key']
     front.logger.debug('\n* Retrieving an image by key: ' + str(key))
+    
     response = memcache_request('get', key, {'key': key})  # retrieve the image by key from memcache
-    front.logger.debug(response.text)
+    
     if not response:
         return render_template('result.html', result='Something Wrong :(')
     if response.json() == 'Unknown key':  # if not in memcache
@@ -208,7 +209,7 @@ def get_image():
             front.logger.debug('\n* Error: ' + str(error))
             return render_template('result.html', result='Something Wrong :(')
         response = memcache_request('put', key, {'key': key, 'value': image})  # cache the key and image
-        front.logger.debug(response.text)
+        
         if not response:
             return render_template('result.html', result='Something Wrong :(')
     else:  # if in memcache
@@ -247,7 +248,7 @@ def put_image():
     if not is_image(image_file):
         return render_template('result.html', result='Input File Format Is Not Supported :(')
     response = memcache_request('get', key, {'key': key})  # retrieve the image by key from memcache
-    front.logger.debug(response.text)
+    
     if not response:
         return render_template('result.html', result='Something Wrong :(')
     if response.json() == 'Unknown key':  # if not in memcache
