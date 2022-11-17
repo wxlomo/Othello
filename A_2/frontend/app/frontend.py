@@ -490,7 +490,7 @@ def teardown_api():
     """
     front.logger.debug('\n* Deleting images from s3...')
     try:
-        for obj in s3.list_objects(Bucket=config.s3_config['name']):
+        for obj in s3.list_objects(Bucket=config.s3_config['name'])['Contents']:
             front.logger.debug('  Deleting: ' + str(obj.key))
             obj.delete()
     except Exception as error:
