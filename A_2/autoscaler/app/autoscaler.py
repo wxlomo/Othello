@@ -22,8 +22,9 @@ def threadedUpdate():
 
 def auto():
     while True:
-        time.sleep(60)
+        
         stat()
+        time.sleep(60)
     
                     
                     

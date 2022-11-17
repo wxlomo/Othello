@@ -315,6 +315,7 @@ def stopinstance():
 
 @manager.route('/manualstartinstance', methods=['POST'])
 def manualstartinstance():
+    global scalerswitch
     scalerswitch = '0'
     try:
       response = managerfunc.start_ec2_instance()
@@ -325,6 +326,7 @@ def manualstartinstance():
   
 @manager.route('/manualstopinstance', methods=['POST'])
 def manualstopinstance():
+    global scalerswitch
     scalerswitch = '0'
     try:
       response = managerfunc.stop_ec2_instance()
