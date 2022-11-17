@@ -245,11 +245,7 @@ def get_nth_ip(n):
     """
     try:
       ip = managerfunc.get_nth_ip(n)
-      response = manager.response_class(
-        response=json.dumps(ip),
-        status=200,
-        mimetype='application/json'
-    )
+      
       return jsonify(ip)
       
     except Exception as e: 

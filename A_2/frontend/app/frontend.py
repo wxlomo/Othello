@@ -103,11 +103,11 @@ def memcache_request(request_str, key, data=''):
           requests.Response object: the response of the request, none if error
     """
     request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
-    response = requests.post("http://localhost:5002/numrunning")
+    response = requests.get("http://localhost:5002/numrunning")
     print(response.text)
     numrunning=response.json()
     request_pooling = request_partition % int(numrunning)
-    response = requests.post("http://localhost:5002/ip/"+str(request_pooling))
+    response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
     pool_ip = str(response.json())
     try:
         response = requests.post(pool_ip + str(request_str), data=data)
