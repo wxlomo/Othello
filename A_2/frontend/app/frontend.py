@@ -262,10 +262,10 @@ def put_image():
         else:  # the key is in database
             cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     else:  # the key is in memcache
-        response = memcache_request('invalidateKey/%s'.format(key), key)  # invalidate the existed key
-        front.logger.debug(response.text)
-        if not response:
-            return render_template('result.html', result='Something Wrong :(')
+        # response = memcache_request('invalidateKey/%s'.format(key), key)  # invalidate the existed key
+        # front.logger.debug(response.text)
+        # if not response:
+        #     return render_template('result.html', result='Something Wrong :(')
         cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     if not cursor:
         return render_template('result.html', result='Something Wrong :(')
@@ -346,10 +346,10 @@ def put_image_api():
         else:  # the key is in database
             cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     else:  # the key is in memcache
-        response = memcache_request('invalidateKey/%s'.format(key), key)  # invalidate the existed key
-        front.logger.debug(response.text)
-        if not response:
-            return render_template('result.html', result='Something Wrong :(')
+        # response = memcache_request('invalidateKey/%s'.format(key), key)  # invalidate the existed key
+        # front.logger.debug(response.text)
+        # if not response:
+        #     return render_template('result.html', result='Something Wrong :(')
         cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     if not cursor:
         return {
