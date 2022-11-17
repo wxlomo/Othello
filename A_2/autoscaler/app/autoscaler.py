@@ -4,28 +4,25 @@ import time
 import requests  
 import threading
 
-t = 0
 
 
+# create thread for auto scale
 @scaler.before_first_request
 def threadedUpdate():
-    global t
-    t = 1
     thread1 = threading.Thread(target=auto)
     thread1.start()
 
 
-# update every 1 mins
+# scale every 1 mins
 def auto():
     while True: 
         time.sleep(60)
         stat()
     
-
+# scale
 @scaler.route('/autonow')
 def stat():
-    global t
-    t = 4
+    #Get autoscaler setting from manager
     response = requests.get("http://localhost:5002/scalerconfig")
     result = response.json()
     run = int(result['scalerswitch'])
@@ -37,12 +34,16 @@ def stat():
     MAXMISS = float(result['maxrate'])
     
     MINMISS = float(result['minrate'])
+    #run if autoscaler is set to be on
     if run:
+        #request 1 mins miss rate from manager to make decision
         response = requests.get("http://localhost:5002/1minmiss")
         missrate = float(response.json())
+        #request number of current running memcache nodes
         response = requests.get("http://localhost:5002/numrunning")
         num = int(response.json())
         new = num
+        #if miss rate greater than Max miss rate, grow
         if missrate > MAXMISS:
             new = min(8, int(num*EXPAND))
             if new < 8 and new == num:
@@ -51,6 +52,7 @@ def stat():
             for i in range(add):
                 response = requests.get("http://localhost:5002/startinstance")
                 scaler.logger.debug(response.text)
+        #if miss rate less than min miss rate, shrink
         elif missrate < MINMISS:
             new = max(1, int(num*SHRINK))
             if new > 1 and new == num:
@@ -64,10 +66,10 @@ def stat():
 
 
 @scaler.route('/')
-# status page render
+# home page render
 def page():
-    global t
-    return str(t)
+
+    return "Scaler is ready"
 
 
 @scaler.route('/testshrink')
