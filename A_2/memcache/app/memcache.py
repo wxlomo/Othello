@@ -378,8 +378,8 @@ def statistic5secs():
     numberItems, currentSize, total, missRate, miss,index = memcacheStatistics.get5SecStat()
     client = boto3.client('cloudwatch', 
                             region_name='us-east-1',
-                            aws_access_key_id=awsKey.aws_access_key_id,
-                            aws_secret_access_key=awsKey.aws_secret_access_key)
+                            aws_access_key_id=awsKey['aws_access_key_id'],
+                            aws_secret_access_key=awsKey['aws_secret_access_key'])
     response = client.put_metric_data(
             MetricData = [{
                     'MetricName': 'numberItems',
