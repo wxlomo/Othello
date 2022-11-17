@@ -19,6 +19,7 @@ def threadedUpdate():
     thread.start()
     
 # update every 1 mins
+
 def updatestat():
 
     while True:
@@ -54,6 +55,41 @@ def updatestat():
                 for i in range(add):
                     response=requests.get("http://localhost:5002/stopinstance")
                     
+                    
+@scaler.route('/autonow')
+def stat():
+    response=requests.get("http://localhost:5002/scalerconfig")
+    result=response.json()
+    run=int(result['scalerswitch'])
+    
+    EXPAND=float(result['expand'])
+    
+    SHRINK=float(result['shrink'])
+    
+    MAXMISS=float(result['maxrate'])
+    
+    MINMISS=float(result['minrate'])
+    if (run):
+        response=requests.get("http://localhost:5002/1minmiss")
+        missrate=float(response.json())
+        response=requests.get("http://localhost:5002/numrunning")
+        num=int(response.json())
+        if missrate>MAXMISS:
+            new=max(8,int(num*EXPAND))
+            if new<8 and new==num:
+                new+=1
+            add=new-num
+            for i in range(add):
+                response=requests.get("http://localhost:5002/startinstance")
+        elif missrate<MINMISS:
+            new=max(1,int(num*SHRINK))
+            if new>1 and new==num:
+                new-=1
+            add=num-new
+            for i in range(add):
+                response=requests.get("http://localhost:5002/stopinstance")
+        return [run,EXPAND,SHRINK,MAXMISS,MINMISS,num,new]
+    return [run,EXPAND,SHRINK,MAXMISS,MINMISS]
 @scaler.route('/')
 # status page render
 def page():
