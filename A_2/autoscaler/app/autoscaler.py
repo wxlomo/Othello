@@ -24,6 +24,8 @@ def threadedUpdate():
 
 def auto():
     while True: 
+        global t
+        t=2
         time.sleep(60)
         stat()
     
