@@ -130,7 +130,6 @@ class cachestat:
     
     def get5SecStat(self):
         total = 0
-        hit = 0
         miss = 0
         hitRate = 0
         missRate = 0
@@ -142,9 +141,8 @@ class cachestat:
                 newGetList.append(act)
                 if act.result == "miss":
                     miss = miss + 1
-                    total = total + 1
-                if act.result == "hit":
-                    total = total + 1
+                total = total + 1
+                
         if total != 0:
             missRate = miss / total
         self.getList = newGetList
