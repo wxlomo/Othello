@@ -284,7 +284,7 @@ def stopinstance():
 def manualstartinstance():
     scalerswitch = '0'
     try:
-      response = managerfunc.start_ec2_instances()
+      response = managerfunc.start_ec2_instance()
     except Exception as e:
       traceback.print_exc()
     print(response, scalerswitch)
@@ -294,7 +294,7 @@ def manualstartinstance():
 def manualstopinstance():
     scalerswitch = '0'
     try:
-      response = managerfunc.stop_ec2_instances()
+      response = managerfunc.stop_ec2_instance()
     except Exception as e:
       traceback.print_exc()
     print(response, scalerswitch)
