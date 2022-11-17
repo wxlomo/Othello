@@ -212,12 +212,8 @@ def get_1minmiss():
       json: the arguments for the Jinja template
     """
     missrate = managerfunc.getAggregateMissRate1mins()
-    response = manager.response_class(
-        response=json.dumps(missrate),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
+    
+    return jsonify(missrate)
     
   
 #return number of instance running for auto scaler to use
@@ -232,12 +228,8 @@ def get_num_running():
       json: the arguments for the Jinja template
     """
     num = managerfunc.num_running()
-    response = manager.response_class(
-        response=json.dumps(num),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
+    
+    return jsonify(num)
     
 
 #return ip of nth instance for auto scaler to use
@@ -258,7 +250,7 @@ def get_nth_ip(n):
         status=200,
         mimetype='application/json'
     )
-      return response
+      return jsonify(ip)
       
     except Exception as e: 
       traceback.print_exc()
