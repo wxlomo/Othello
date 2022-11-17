@@ -21,10 +21,10 @@ def threadedUpdate():
 # update every 1 mins
 
 def auto():
-
     while True:
         time.sleep(60)
         stat()
+    
                     
                     
 @scaler.route('/autonow')
