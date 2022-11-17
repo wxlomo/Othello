@@ -11,7 +11,7 @@ import base64
 import os
 from io import BytesIO
 import traceback
-
+import json
 import matplotlib
 
 matplotlib.use('Agg')
@@ -212,7 +212,13 @@ def get_1minmiss():
       json: the arguments for the Jinja template
     """
     missrate = managerfunc.getAggregateMissRate1mins()
-    return missrate
+    response = manager.response_class(
+        response=json.dumps(missrate),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+    
   
 #return number of instance running for auto scaler to use
 @manager.route('/numrunning ')
@@ -226,7 +232,13 @@ def get_num_running():
       json: the arguments for the Jinja template
     """
     num = managerfunc.num_running()
-    return num
+    response = manager.response_class(
+        response=json.dumps(num),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+    
 
 #return ip of nth instance for auto scaler to use
 @manager.route('/ip/<n>')
@@ -241,7 +253,13 @@ def get_nth_ip(n):
     """
     try:
       ip = managerfunc.get_nth_ip(n)
-      return ip
+      response = manager.response_class(
+        response=json.dumps(ip),
+        status=200,
+        mimetype='application/json'
+    )
+      return response
+      
     except Exception as e: 
       traceback.print_exc()
       return e
