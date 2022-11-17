@@ -26,13 +26,9 @@ def stat():
     response = requests.get("http://localhost:5002/scalerconfig")
     result = response.json()
     run = int(result['scalerswitch'])
-    
     EXPAND = float(result['expand'])
-    
     SHRINK = float(result['shrink'])
-    
     MAXMISS = float(result['maxrate'])
-    
     MINMISS = float(result['minrate'])
     # run if autoscaler is set to be on
     if run:
