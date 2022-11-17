@@ -17,8 +17,8 @@ t=0
 def threadedUpdate():
     global t
     t=1
-    thread = threading.Thread(target=auto)
-    thread.start()
+    thread1 = threading.Thread(target=auto)
+    thread1.start()
     
 # update every 1 mins
 
