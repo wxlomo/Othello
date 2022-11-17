@@ -245,8 +245,10 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                 )
         if response['Datapoints']:
             total+=response['Datapoints'][0]['Sum']
-            
-    return miss/total
+        totald=total
+        if total==0:
+            totald=1    
+    return miss/totald
     
     
 def getAggregateStat30Mins():
