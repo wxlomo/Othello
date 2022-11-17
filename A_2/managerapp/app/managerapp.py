@@ -298,7 +298,7 @@ def get_about():
 @manager.route('/startinstance')
 def startinstance():
     try:
-      response = managerfunc.start_ec2_instances()
+      response = managerfunc.start_ec2_instance()
     except Exception as e:
       traceback.print_exc()
     return response
@@ -307,7 +307,7 @@ def startinstance():
 @manager.route('/stopinstance')
 def stopinstance():
     try:
-      response = managerfunc.stop_ec2_instances()
+      response = managerfunc.stop_ec2_instance()
     except Exception as e:
       traceback.print_exc()
     return response
@@ -349,7 +349,7 @@ def delete_data():
     """
     manager.logger.debug('\n* Deleting data')
     try:
-      response = requests.get("http://localhost:5000/api/teardown")
+      response = requests.post("http://localhost:5000/api/teardown")
     except Exception as e:
       traceback.print_exc()
     manager.logger.debug(response.text)

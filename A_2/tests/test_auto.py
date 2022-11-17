@@ -135,7 +135,7 @@ def test_auto(mode):
         key_pool(mode)
     df = pd.DataFrame(data, columns=['Number of nodes', 'Miss rate'])
     fig = sns.relplot(data=df, x='Number of nodes', y='Miss rate (%)', kind='line')
-    fig.fig.savefig('img/missrate_' + str(mode) + '.png')
+    fig.fig.savefig('img/missrate' + str(mode) + '.png')
     print('DONE.')
 
 

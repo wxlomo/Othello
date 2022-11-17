@@ -6,10 +6,8 @@
  * Date: Oct. 11, 2022
 """
 from . import front, config, s3
-# from memfunc import memfunc
-from flask import render_template, request, g, escape,jsonify
+from flask import render_template, request, g, escape, jsonify
 from werkzeug.utils import secure_filename
-# import memfunc
 import mysql.connector
 import requests
 import base64
@@ -83,7 +81,7 @@ def db_wrapper(query_type, arg1='', arg2=''):
         front.logger.debug('\n* Executing query: ' + str(query))
         cursor = db.cursor()
         cursor.execute(query)
-        if query_type == 'put_image' or query_type == 'put_image_exist' or query_type == 'put_config':
+        if query_type != 'get_key' and query_type != 'get_image':
             db.commit()
         return cursor
     except Exception as error:
@@ -104,10 +102,9 @@ def memcache_request(request_str, key, data=''):
     """
     request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
     response = requests.get("http://localhost:5002/numrunning")
-    
-    numrunning=response.json()
-    if(numrunning!=0):
-        request_pooling = request_partition % int(numrunning)
+    n_running = response.json()
+    if n_running != 0:
+        request_pooling = request_partition % int(n_running)
         response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
         pool_ip = str(response.json())
         try:
@@ -117,6 +114,7 @@ def memcache_request(request_str, key, data=''):
             front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
             return None
     return 'Unknown key'
+
 
 def is_image(file):
     """Check if the file format is an image
@@ -492,9 +490,13 @@ def teardown_api():
     """
     front.logger.debug('\n* Deleting images from s3...')
     try:
-        for obj in s3.Bucket(config.s3_config['name']).objects.all():
-            front.logger.debug('  Deleting: ' + str(obj.key))
-            obj.delete()
+        response = s3.list_objects_v2(Bucket=config.s3_config['name'])
+        if 'Content' in response:  # bucket is not empty
+            for obj in response['Content']:
+                front.logger.debug('  Deleting: ' + str(obj['Key']))
+                s3.delete_objects(Bucket=config.s3_config['name'], Delete={'Objects': [{'Key': obj['Key']}]})
+        else:  # bucket is empty
+            front.logger.debug('  Bucket is empty')
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
         return {
