@@ -347,7 +347,7 @@ def delete_data():
     """
     manager.logger.debug('\n* Deleting data')
     try:
-      response = requests.get("http://localhost:5000/api/teardown")
+      response = requests.post("http://localhost:5000/api/teardown")
     except Exception as e:
       traceback.print_exc()
     manager.logger.debug(response.text)
