@@ -83,6 +83,7 @@ def get_home():
     # stats = [stat1, stat2, stat3, stat4, stat5]
     # num=0
     stats = managerfunc.getAggregateStat30Mins()
+    print(stats)
     num = managerfunc.num_running()
     for i in [0,1,2,3,4]:    
         result.append((draw_charts(stats[i], y_label[i], title[i])))
