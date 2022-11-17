@@ -4,17 +4,17 @@ import datetime
 import mysql.connector
 import threading
 import time
-
 from collections import OrderedDict
 from flask import request, g
-from . import mem,config
-
-from flask import jsonify,json
+from . import mem, config
+from flask import jsonify, json
 import boto3
 global cache
 global memcacheStatistics
 global memcacheConfig
-awsKey=config.awsKey
+
+
+awsKey = config.awsKey
 cache = OrderedDict()
 memcacheConfig = {'capacity': 4,
                   'policy': 'LRU'}  # default setting, get real time config from db
@@ -43,7 +43,8 @@ class cachestat:
         self.numberItems = 0  # track number of items in cache
         self.currentSize = 0  # track current cache size
         self.requestList = []  # store all requests time
-        self.index=-1
+        self.index = -1
+
     def get_size(self):
         return self.currentSize
 
@@ -100,7 +101,7 @@ class cachestat:
         #         numberRequests += 1
         #         newRequestList.append(t)
         # self.requestList = newRequestList
-        return [self.numberItems, self.currentSize / 1024 / 1024, total, missRate, hitRate,self.index]
+        return [self.numberItems, self.currentSize / 1024 / 1024, total, missRate, hitRate, self.index]
 
     def get1MinStat(self):
         total = 0
@@ -124,9 +125,7 @@ class cachestat:
             hitRate = hit / total
             missRate = miss / total
         self.getList = newGetList
-
-        
-        return [self.numberItems, self.currentSize / 1024 / 1024, total, missRate, hitRate,self.index]
+        return [self.numberItems, self.currentSize / 1024 / 1024, total, missRate, hitRate, self.index]
     
     def get5SecStat(self):
         total = 0
@@ -146,9 +145,8 @@ class cachestat:
         if total != 0:
             missRate = miss / total
         self.getList = newGetList
+        return [self.numberItems, self.currentSize / 1024 / 1024, total, missRate*100, miss, self.index]
 
-        
-        return [self.numberItems, self.currentSize / 1024 / 1024, total, missRate*100, miss,self.index]
 
 memcacheStatistics = cachestat()
 
@@ -235,7 +233,7 @@ def refreshConfiguration(capacity, policy):
 
     # cursor.close()
     # cnx.close()
-    while (memcacheStatistics.get_size() > memcacheConfig['capacity'] * 1024 * 1024):
+    while memcacheStatistics.get_size() > memcacheConfig['capacity'] * 1024 * 1024:
         if memcacheConfig['policy'] == 'LRU':
             delvalue = cache.popitem(False)[1]
             size = sys.getsizeof(delvalue)
@@ -286,14 +284,11 @@ def get():
     return response
 
 
-
 @mem.route('/getall', methods=['POST'])
 # send the image retrieved from the given key to the frontend
 def getall():
     # t = datetime.datetime.now()
     # memcacheStatistics.addRequestTime(t)
-
-    
     if cache:
         return cache
     else:
@@ -302,8 +297,8 @@ def getall():
                 status=400,
                 mimetype='application/json'
             )
-
     return response
+
 
 @mem.route('/put', methods=['POST'])
 # put an image and its key to memcache
@@ -373,13 +368,14 @@ def statistic5secs():
     #     mimetype='application/json'
     # )
     # return response
-    numberItems, currentSize, total, missRate, miss,index = memcacheStatistics.get5SecStat()
-    client = boto3.client('cloudwatch', 
-                            region_name='us-east-1',
-                            aws_access_key_id=awsKey['aws_access_key_id'],
-                            aws_secret_access_key=awsKey['aws_secret_access_key'])
+    numberItems, currentSize, total, missRate, miss, index = memcacheStatistics.get5SecStat()
+    client = boto3.client('cloudwatch',
+                          region_name='us-east-1',
+                          aws_access_key_id=awsKey['aws_access_key_id'],
+                          aws_secret_access_key=awsKey['aws_secret_access_key']
+                          )
     response = client.put_metric_data(
-            MetricData = [{
+            MetricData=[{
                     'MetricName': 'numberItems',
                     'Dimensions': [{
                             'Name': 'instance',
@@ -387,10 +383,10 @@ def statistic5secs():
                         }],
                     'Unit': 'Count',
                     'Value': numberItems}],
-            Namespace = 'ece1779/memcache')
+            Namespace='ece1779/memcache')
     
     response = client.put_metric_data(
-            MetricData = [{
+            MetricData=[{
                     'MetricName': 'currentSize',
                     'Dimensions': [{
                             'Name': 'instance',
@@ -398,10 +394,10 @@ def statistic5secs():
                         }],
                     'Unit': 'Megabits',
                     'Value': currentSize}],
-            Namespace = 'ece1779/memcache')
+            Namespace='ece1779/memcache')
     
     response = client.put_metric_data(
-            MetricData = [{
+            MetricData=[{
                     'MetricName': 'numberRequests',
                     'Dimensions': [{
                             'Name': 'instance',
@@ -409,10 +405,10 @@ def statistic5secs():
                         }],
                     'Unit': 'Count',
                     'Value': total}],
-            Namespace = 'ece1779/memcache')
+            Namespace='ece1779/memcache')
     
     response = client.put_metric_data(
-            MetricData = [{
+            MetricData=[{
                     'MetricName': 'miss',
                     'Dimensions': [{
                             'Name': 'instance',
@@ -420,10 +416,10 @@ def statistic5secs():
                         }],
                     'Unit': 'Count',
                     'Value': miss}],
-            Namespace = 'ece1779/memcache')
+            Namespace='ece1779/memcache')
     
     response = client.put_metric_data(
-            MetricData = [{
+            MetricData=[{
                     'MetricName': 'missRate',
                     'Dimensions': [{
                             'Name': 'instance',
@@ -431,10 +427,10 @@ def statistic5secs():
                         }],
                     'Unit': 'Percent',
                     'Value': missRate}],
-            Namespace = 'ece1779/memcache')
+            Namespace='ece1779/memcache')
     
     response = client.put_metric_data(
-            MetricData = [{
+            MetricData=[{
                     'MetricName': 'hitRate',
                     'Dimensions': [{
                             'Name': 'instance',
@@ -442,15 +438,13 @@ def statistic5secs():
                         }],
                     'Unit': 'Percent',
                     'Value': 100.0-missRate}],
-            Namespace = 'ece1779/memcache')
+            Namespace='ece1779/memcache')
     return response
-    
+
+
 @mem.route('/memIndex/<id>')
 def setIndex(id):
-    
-
     memcacheStatistics.index = int(id)
-
     return jsonify({"success": "true",
                     "statusCode": 200})
     
