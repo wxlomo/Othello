@@ -21,10 +21,9 @@ def threadedUpdate():
 # update every 1 mins
 
 def auto():
-    while True:
-        
+    while True: 
+        time.sleep(5)
         stat()
-        time.sleep(60)
     
                     
                     
