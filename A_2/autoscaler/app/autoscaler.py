@@ -27,6 +27,7 @@ def auto():
         global t
         t=2
         time.sleep(60)
+        t=3
         stat()
     
                     
@@ -34,7 +35,7 @@ def auto():
 @scaler.route('/autonow')
 def stat():
     global t
-    t=3
+    t=4
     response=requests.get("http://localhost:5002/scalerconfig")
     result=response.json()
     run=int(result['scalerswitch'])
