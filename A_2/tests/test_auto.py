@@ -13,7 +13,6 @@
  * the result will be generated as figures in /img folder.
 """
 import sys
-
 import requests
 import random
 import seaborn as sns
