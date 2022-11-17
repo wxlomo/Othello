@@ -16,6 +16,7 @@ import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 import mysql.connector
 import requests
 from flask import escape, g, jsonify, render_template, request
@@ -68,6 +69,7 @@ def draw_charts_percentage(stats:list, y_label:str, title:str):
     # draw the charts
     x1 = [x for x in range(len(stats))]
     l1 = plt.plot(x1, stats, 'r')
+    plt.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=2))
     plt.xlabel('Time')
     plt.ylabel(y_label)
     plt.title(title)
