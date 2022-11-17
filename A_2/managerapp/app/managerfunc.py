@@ -329,7 +329,7 @@ def getAggregateStat30Mins():
                     EndTime = endTime,
                     Period=60,
                     Statistics=['Average'],
-                    Unit='Count',
+                    Unit='Megabits',
                     )
             if response['Datapoints']:
                 size+=response['Datapoints'][0]['Average']
@@ -337,8 +337,8 @@ def getAggregateStat30Mins():
         if total==0:
             totald=1
         
-        missRate.append(miss/totald)
-        hitRate.append(1-miss/totald)
+        missRate.append(float(miss/totald))
+        hitRate.append(1.0-miss/totald)
         totalRequests.append(total)
         numberItems.append(numItem)
         currentSize.append(size)
