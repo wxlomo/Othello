@@ -66,6 +66,17 @@ def page():
 
 @scaler.route('/testshrink')
 def testshrink():
+    response=requests.get("http://localhost:5002/scalerconfig")
+    result=response.json()
+    run=int(result['scalerswitch'])
+    
+    EXPAND=float(result['expand'])
+    
+    SHRINK=float(result['shrink'])
+    
+    MAXMISS=float(result['maxrate'])
+    
+    MINMISS=float(result['minrate'])
     response=requests.get("http://localhost:5002/numrunning")
     num=int(response.json())
     new=max(1,int(num*SHRINK))
@@ -77,7 +88,18 @@ def testshrink():
         
         
 @scaler.route('/testgrow')
-def testshrink():
+def testgrow():
+    response=requests.get("http://localhost:5002/scalerconfig")
+    result=response.json()
+    run=int(result['scalerswitch'])
+    
+    EXPAND=float(result['expand'])
+    
+    SHRINK=float(result['shrink'])
+    
+    MAXMISS=float(result['maxrate'])
+    
+    MINMISS=float(result['minrate'])
     response=requests.get("http://localhost:5002/numrunning")
     num=int(response.json())
     new=max(1,int(num*EXPAND))
