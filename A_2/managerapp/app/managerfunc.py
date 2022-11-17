@@ -224,7 +224,7 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                 MetricName='miss',
                 Dimensions=[{
                         "Name": "instance",
-                        "Value": i
+                        "Value": str(i)
                     }],
                 StartTime = startTime,
                 EndTime = endTime,
@@ -238,7 +238,7 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                 MetricName='total',
                 Dimensions=[{
                         "Name": "instance",
-                        "Value": i
+                        "Value": str(i)
                     }],
                 StartTime = startTime,
                 EndTime = endTime,
@@ -275,7 +275,7 @@ def getAggregateStat30Mins():
                     MetricName='miss',
                     Dimensions=[{
                             "Name": "instance",
-                            "Value": i
+                            "Value": str(i)
                         }],
                     StartTime = startTime,
                     EndTime = endTime,
@@ -289,7 +289,7 @@ def getAggregateStat30Mins():
                     MetricName='total',
                     Dimensions=[{
                             "Name": "instance",
-                            "Value": i
+                            "Value": str(i)
                         }],
                     StartTime = startTime,
                     EndTime = endTime,
@@ -303,7 +303,7 @@ def getAggregateStat30Mins():
                     MetricName='numberItems',
                     Dimensions=[{
                             "Name": "instance",
-                            "Value": i
+                            "Value": str(i)
                         }],
                     StartTime = startTime,
                     EndTime = endTime,
@@ -317,7 +317,7 @@ def getAggregateStat30Mins():
                     MetricName='currentSize',
                     Dimensions=[{
                             "Name": "instance",
-                            "Value": i
+                            "Value": str(i)
                         }],
                     StartTime = startTime,
                     EndTime = endTime,

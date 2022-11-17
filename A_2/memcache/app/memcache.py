@@ -385,7 +385,7 @@ def statistic5secs():
                     'MetricName': 'numberItems',
                     'Dimensions': [{
                             'Name': 'instance',
-                            'Value': index
+                            'Value': str(index)
                         }],
                     'Unit': 'Count',
                     'Value': numberItems}],
@@ -396,7 +396,7 @@ def statistic5secs():
                     'MetricName': 'currentSize',
                     'Dimensions': [{
                             'Name': 'instance',
-                            'Value': index
+                            'Value': str(index)
                         }],
                     'Unit': 'Mb',
                     'Value': currentSize}],
@@ -407,7 +407,7 @@ def statistic5secs():
                     'MetricName': 'numberRequests',
                     'Dimensions': [{
                             'Name': 'instance',
-                            'Value': index
+                            'Value': str(index)
                         }],
                     'Unit': 'Count',
                     'Value': total}],
@@ -418,7 +418,7 @@ def statistic5secs():
                     'MetricName': 'miss',
                     'Dimensions': [{
                             'Name': 'instance',
-                            'Value': index
+                            'Value': str(index)
                         }],
                     'Unit': 'Count',
                     'Value': miss}],
@@ -429,7 +429,7 @@ def statistic5secs():
                     'MetricName': 'missRate',
                     'Dimensions': [{
                             'Name': 'instance',
-                            'Value': index
+                            'Value': str(index)
                         }],
                     'Unit': 'Percent',
                     'Value': missRate}],
@@ -440,7 +440,7 @@ def statistic5secs():
                     'MetricName': 'hitRate',
                     'Dimensions': [{
                             'Name': 'instance',
-                            'Value': index
+                            'Value': str(index)
                         }],
                     'Unit': 'Percent',
                     'Value': 100.0-missRate}],
