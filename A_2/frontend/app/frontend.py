@@ -110,9 +110,9 @@ def memcache_request(request_str, key, data=''):
         if request_str=="invalidateKey/":
             try:
                 response = requests.post("http://"+str(pool_ip)+":5001/invalidateKey/"+ str(key))
-                return response.json()
+                return response.text
             except Exception as error:
-                front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error) + str(response.json())+"http://"+str(pool_ip)+":5001/invalidateKey/"+ str(key))
+                front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
                 return None
         else:
             try:
