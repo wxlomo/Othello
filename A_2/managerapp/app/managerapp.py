@@ -110,7 +110,7 @@ def get_home():
     # stats = [stat1, stat2, stat3, stat4, stat5]
     # num=0
     stats = managerfunc.getAggregateStat30Mins()
-    front.logger.debug(stats)
+    manager.logger.debug(stats)
     num = managerfunc.num_running()
     for i in [0, 1, 2]:
         result.append((draw_charts(stats[i], y_label[i], title[i])))
@@ -200,11 +200,11 @@ def put_memcacheconfig():
         ipList = managerfunc.get_all_ip()
         for eachIP in ipList:
             response = requests.get("http://" + eachIP + ":5001/refreshConfiguration" + "/" + str(policy) + "/" + str(capacity))
-            front.logger.debug(response.text)
+            manager.logger.debug(response.text)
             return render_template('result.html', result='Your Request Has Been Processed :)')
    
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return render_template('result.html', result='Something Wrong :(')
 
 
@@ -277,7 +277,7 @@ def get_nth_ip(n):
         ip = managerfunc.get_nth_ip(n)
         return jsonify(ip)
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return None
 
 
@@ -301,7 +301,7 @@ def startinstance():
         response = managerfunc.start_ec2_instance()
         return response
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return None
 
 
@@ -311,7 +311,7 @@ def stopinstance():
         response = managerfunc.stop_ec2_instance()
         return response
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return None
 
 
@@ -321,10 +321,10 @@ def manualstartinstance():
     scalerswitch = '0'
     try:
         response = managerfunc.start_ec2_instance()
-        front.logger.debug(str(response) + str(scalerswitch))
+        manager.logger.debug(str(response) + str(scalerswitch))
         return render_template('result.html', result='Your Request Has Been Processed :)')
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return render_template('result.html', result='Something Wrong :(')
 
 
@@ -334,10 +334,10 @@ def manualstopinstance():
     scalerswitch = '0'
     try:
         response = managerfunc.stop_ec2_instance()
-        front.logger.debug(str(response) + str(scalerswitch))
+        manager.logger.debug(str(response) + str(scalerswitch))
         return render_template('result.html', result='Your Request Has Been Processed :)')
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return render_template('result.html', result='Something Wrong :(')
   
 
@@ -356,7 +356,7 @@ def delete_data():
         response = requests.post("http://localhost:5000/api/teardown")
         manager.logger.debug(response.text)
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
     manager.logger.debug('\n* Clearing memcache')
     try:
         ipList = managerfunc.get_all_ip()
@@ -365,7 +365,7 @@ def delete_data():
             manager.logger.debug(response.text)
         return render_template('result.html', result='Your Request Has Been Processed :)')
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return render_template('result.html', result='Something Wrong :(')
   
 
@@ -387,5 +387,5 @@ def clear_all_cache():
             manager.logger.debug(response.text)
         return render_template('result.html', result='Your Request Has Been Processed :)')
     except Exception as error:
-        front.logger.error('\n* Error: ' + str(error))
+        manager.logger.error('\n* Error: ' + str(error))
         return render_template('result.html', result='Something Wrong :(')
