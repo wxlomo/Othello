@@ -5,8 +5,6 @@
  * Author: Haotian Chen
  * Date: Nov. 8, 2022
 """
-
-
 import base64
 import os
 from io import BytesIO
