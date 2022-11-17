@@ -5,7 +5,6 @@ import requests
 import threading
 
 
-
 # create thread for auto scale
 @scaler.before_first_request
 def threadedUpdate():
@@ -18,11 +17,12 @@ def auto():
     while True: 
         time.sleep(60)
         stat()
-    
+
+
 # scale
 @scaler.route('/autonow')
 def stat():
-    #Get autoscaler setting from manager
+    # Get autoscaler setting from manager
     response = requests.get("http://localhost:5002/scalerconfig")
     result = response.json()
     run = int(result['scalerswitch'])
@@ -34,16 +34,16 @@ def stat():
     MAXMISS = float(result['maxrate'])
     
     MINMISS = float(result['minrate'])
-    #run if autoscaler is set to be on
+    # run if autoscaler is set to be on
     if run:
-        #request 1 mins miss rate from manager to make decision
+        # request 1 mins miss rate from manager to make decision
         response = requests.get("http://localhost:5002/1minmiss")
         missrate = float(response.json())
-        #request number of current running memcache nodes
+        # request number of current running memcache nodes
         response = requests.get("http://localhost:5002/numrunning")
         num = int(response.json())
         new = num
-        #if miss rate greater than Max miss rate, grow
+        # if miss rate greater than Max miss rate, grow
         if missrate > MAXMISS:
             new = min(8, int(num*EXPAND))
             if new < 8 and new == num:
@@ -52,7 +52,7 @@ def stat():
             for i in range(add):
                 response = requests.get("http://localhost:5002/startinstance")
                 scaler.logger.debug(response.text)
-        #if miss rate less than min miss rate, shrink
+        # if miss rate less than min miss rate, shrink
         elif missrate < MINMISS:
             new = max(1, int(num*SHRINK))
             if new > 1 and new == num:
