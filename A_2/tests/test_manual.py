@@ -255,7 +255,7 @@ def latency_figure(start_pool_size, end_pool_size, read_ratio=0.5):
                 data.append([request_number, latency_test(request_number, read_ratio), current_pool_size])
     df = pd.DataFrame(data, columns=['Number of requests', 'Latency (seconds)', 'Memcache pool size'])
     fig = sns.relplot(data=df, x='Number of requests', y='Latency (seconds)', kind='line', style='Memcache pool size', hue='Memcache pool size')
-    fig.fig.savefig('img/latency_' + str(read_ratio) + '.png')
+    fig.fig.savefig('img/latency_' + str(start_pool_size) + '-' + str(end_pool_size) + '.png')
 
 
 def throughput_figure(start_pool_size, end_pool_size, read_ratio=0.5):
@@ -290,7 +290,7 @@ def throughput_figure(start_pool_size, end_pool_size, read_ratio=0.5):
                 data.append([time_window, throughput_test(time_window, read_ratio), current_pool_size])
     df = pd.DataFrame(data, columns=['Units of time (seconds)', 'Maximum number of requests', 'Memcache pool size'])
     fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue='Memcache pool size', ci=None)
-    fig.fig.savefig('img/throughput_' + str(read_ratio) + '.png')
+    fig.fig.savefig('img/throughput_' + str(start_pool_size) + '-' + str(end_pool_size) + '.png')
 
 
 def test_manual(ttype, start_pool_size, end_pool_size):
