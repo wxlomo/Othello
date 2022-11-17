@@ -10,11 +10,13 @@ import threading
 # import memfunc
 # from memfunc import Memcache
 
-
+t=0
 
 
 @scaler.before_first_request
 def threadedUpdate():
+    global t
+    t=1
     thread = threading.Thread(target=auto)
     thread.start()
     
@@ -22,7 +24,7 @@ def threadedUpdate():
 
 def auto():
     while True: 
-        time.sleep(5)
+        time.sleep(60)
         stat()
     
                     
@@ -64,7 +66,8 @@ def stat():
 @scaler.route('/')
 # status page render
 def page():
-    return "Scaler Is Ready"
+    global t
+    return t
 
 @scaler.route('/testshrink')
 def testshrink():
