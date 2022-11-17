@@ -11,12 +11,7 @@ import threading
 # from memfunc import Memcache
 
 
-missrate=0
-run=0
-MAXMISS=0.7
-MINMISS=0.3
-EXPAND=1
-SHRINK=1
+
 
 @scaler.before_first_request
 def threadedUpdate():
