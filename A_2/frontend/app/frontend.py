@@ -107,12 +107,20 @@ def memcache_request(request_str, key, data=''):
         request_pooling = request_partition % int(n_running)
         response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
         pool_ip = str(response.json())
-        try:
-            response = requests.post("http://"+pool_ip+":5001/" + str(request_str), data=data)
-            return response.json()
-        except Exception as error:
-            front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
-            return None
+        if request_str=="invalidateKey/":
+            try:
+                response = requests.post("http://"+pool_ip+":5001/" + str(request_str)+ str(key))
+                return response.json()
+            except Exception as error:
+                front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
+                return None
+        else:
+            try:
+                response = requests.post("http://"+pool_ip+":5001/" + str(request_str), data=data)
+                return response.json()
+            except Exception as error:
+                front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
+                return None
     return 'Unknown key'
 
 
@@ -262,7 +270,7 @@ def put_image():
         else:  # the key is in database
             cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     else:  # the key is in memcache
-        response = memcache_request('invalidateKey/%s'.format(key), key)  # invalidate the existed key
+        response = memcache_request('invalidateKey/', key)  # invalidate the existed key
         front.logger.debug(response)
         if not response:
             return render_template('result.html', result='Something Wrong :(')
@@ -346,7 +354,7 @@ def put_image_api():
         else:  # the key is in database
             cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
     else:  # the key is in memcache
-        response = memcache_request('invalidateKey/%s'.format(key), key)  # invalidate the existed key
+        response = memcache_request('invalidateKey/', key)  # invalidate the existed key
         front.logger.debug(response)
         if not response:
             return render_template('result.html', result='Something Wrong :(')
