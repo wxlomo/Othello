@@ -231,7 +231,7 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                 Period=period,
                 Statistics=['Sum'],
                 Unit='Count',
-                )['Datapoints']['Sum']
+                )['Datapoints'][0]['Sum']
         
         total+=client.get_metric_statistics(
                 Namespace='ece1779/memcache',
@@ -245,7 +245,7 @@ def getAggregateMissRate1mins(intervals=60, period=60):
                 Period=period,
                 Statistics=['Sum'],
                 Unit='Count',
-                )['Datapoints']['Sum']
+                )['Datapoints'][0]['Sum']
             
     return miss/total
     
@@ -282,7 +282,7 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Sum'],
                     Unit='Count',
-                    )['Datapoints']['Sum']
+                    )['Datapoints'][0]['Sum']
             
             total+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
@@ -296,7 +296,7 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Sum'],
                     Unit='Count',
-                    )['Datapoints']['Sum']
+                    )['Datapoints'][0]['Sum']
             
             numItem+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
@@ -310,7 +310,7 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Average'],
                     Unit='Count',
-                    )['Datapoints']['Average']
+                    )['Datapoints'][0]['Average']
             
             size+=client.get_metric_statistics(
                     Namespace='ece1779/memcache',
@@ -324,7 +324,7 @@ def getAggregateStat30Mins():
                     Period=60,
                     Statistics=['Average'],
                     Unit='Count',
-                    )['Datapoints']['Average']
+                    )['Datapoints'][0]['Average']
                 
         missRate.append(miss/total)
         hitRate.append(1-miss/total)
