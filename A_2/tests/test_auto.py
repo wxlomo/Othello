@@ -23,11 +23,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 # The http address regards the deployed web application
-base_url = "http://54.235.28.157:5000/"
+base_url = "http://3.80.40.201:5000/"
 # The http address regards the manager application
-manager_url = "http://54.235.28.157:5002/"
+manager_url = "http://3.80.40.201:5002/"
 
-key = range(10)
+key = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 sns.set_theme(style="whitegrid")
 
 
@@ -47,18 +47,32 @@ def read_test():
         print('* Error: ' + str(error))
 
 
-def write_test():
-    """Send the http request to retrieve an image with a random key
+def read(rkey):
+    """Send the http request to get an image
 
     Args:
-      n/a
+      rkey (int): the key to put the image
 
     Returns:
       n/a
     """
-    random_key = random.choice(key)
+    try:
+        response = requests.post(base_url + "/api/key/" + str(r_key), verify=False)
+    except Exception as error:
+        print('* Error: ' + str(error))
+
+
+def write(wkey):
+    """Send the http request to put an image
+
+    Args:
+      wkey (int): the key to put the image
+
+    Returns:
+      n/a
+    """
     image = open('img/test.jpg', 'rb')
-    data = {'key': random_key}
+    data = {'key': wkey}
     files = {'file': image}
     try:
         response = requests.post(base_url + "/api/upload", files=files, data=data, verify=False)
@@ -78,9 +92,15 @@ def key_pool(mode):
     print(str(mode) + 'ing the key pool')
     global key
     if mode == 'grow':
-        key.append(randint(0, 99))
+        if len(key) < 30:
+            while True:
+                new_key = random.randint(1, 100)
+                if new_key not in key:
+                    key.append(new_key)
+                    write(new_key)
+                    break
     elif mode == 'shrink':
-        if len(list) > 1:
+        if len(key) > 1:
             key.pop()
     else:
         raise ValueError('No such type of test')
@@ -96,7 +116,7 @@ def get_miss():
     Returns:
       float: the memcache miss rate
     """
-    response = requests.post(manager_url + '/1minmiss', verify=False)
+    response = requests.get(manager_url + '/1minmiss', verify=False)
     print('Get miss rate: ' + str(response.json()))
     return response.json()
 
@@ -110,7 +130,7 @@ def get_node():
     Returns:
       int: the memcache node number
     """
-    response = requests.post(manager_url + '/numrunning', verify=False)
+    response = requests.get(manager_url + '/numrunning', verify=False)
     print('Get node number: ' + str(response.json()))
     return response.json()
 
@@ -125,15 +145,30 @@ def test_auto(mode):
           n/a
     """
     data = []
-    current_node = 0
-    while current_node == 8 or current_node == 1:
+    for ckey in key:
+        write(ckey)
+        read(ckey)
+    while True:
+        sleep(1)
         read_test()
-        write_test()
-        if current_node != get_node():
-            current_node = get_node()
-            data.append([current_node, get_miss()])
-        key_pool(mode)
-    df = pd.DataFrame(data, columns=['Number of nodes', 'Miss rate'])
+        sleep(1)
+        read_test()
+        sleep(1)
+        read_test()
+        sleep(1)
+        read_test()
+        sleep(1)
+        read_test()
+        current_node = get_node()
+        current_miss = get_miss()
+        if mode == 'grow' and current_miss < 0.75:
+            key_pool('grow')
+        elif mode == 'shrink' and current_miss > 0.15:
+            key_pool('shrink')
+        data.append([current_node, current_miss * 100])
+        if current_node == 1 or current_node == 8:
+            break
+    df = pd.DataFrame(data, columns=['Number of nodes', 'Miss rate (%)'])
     fig = sns.relplot(data=df, x='Number of nodes', y='Miss rate (%)', kind='line')
     fig.fig.savefig('img/missrate' + str(mode) + '.png')
     print('DONE.')

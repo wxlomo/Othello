@@ -17,7 +17,7 @@ import sys
 
 
 # The http address regards the deployed web application
-base_url = "http://127.0.0.1:5000/"
+base_url = "http://3.80.40.201:5000"
 
 
 def read_all_test():
