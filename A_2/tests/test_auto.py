@@ -57,7 +57,7 @@ def read(rkey):
       n/a
     """
     try:
-        response = requests.post(base_url + "/api/key/" + str(r_key), verify=False)
+        response = requests.post(base_url + "/api/key/" + str(rkey), verify=False)
     except Exception as error:
         print('* Error: ' + str(error))
 
@@ -149,15 +149,10 @@ def test_auto(mode):
         write(ckey)
         read(ckey)
     while True:
-        sleep(1)
         read_test()
-        sleep(1)
         read_test()
-        sleep(1)
         read_test()
-        sleep(1)
         read_test()
-        sleep(1)
         read_test()
         current_node = get_node()
         current_miss = get_miss()
@@ -168,6 +163,7 @@ def test_auto(mode):
         data.append([current_node, current_miss * 100])
         if current_node == 1 or current_node == 8:
             break
+        sleep(5)
     df = pd.DataFrame(data, columns=['Number of nodes', 'Miss rate (%)'])
     fig = sns.relplot(data=df, x='Number of nodes', y='Miss rate (%)', kind='line')
     fig.fig.savefig('img/missrate' + str(mode) + '.png')
