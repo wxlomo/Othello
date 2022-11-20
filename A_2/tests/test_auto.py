@@ -20,12 +20,7 @@ import pandas as pd
 from time import time, sleep
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
-
-
-# The http address regards the deployed web application
-base_url = "http://34.230.79.241:5000/"
-# The http address regards the manager application
-manager_url = "http://34.230.79.241:5002/"
+from config import base_url, manager_url
 
 key = []
 sns.set_theme(style="whitegrid")
@@ -203,21 +198,26 @@ def test_auto(mode):
     df2.to_csv('img/auto-scalar-resize-' + str(mode) + '.csv', encoding='utf-8')
     fig = sns.relplot(data=df, x='Number of keys', y='Miss rate (%)', kind='line', hue='Number of nodes', palette=sns.color_palette("tab10", 4), sort=False)
     fig.axes[0][0].yaxis.set_major_locator(MultipleLocator(5))
+    fig.set(ylim=(0, 100))
     sns.move_legend(fig, 'upper right', bbox_to_anchor=(.8, 1))
     if mode == 'shrink':
         sns.move_legend(fig, 'upper right', bbox_to_anchor=(.8, 1))
         for ax in fig.axes[0]:
             ax.invert_xaxis()
+        fig.axes[0][0].axhline(15, ls='--', c='grey')
     else:
         sns.move_legend(fig, 'upper right', bbox_to_anchor=(.8, 0.4))
+        fig.axes[0][0].axhline(75, ls='--', c='grey')
     fig.fig.savefig('img/auto-scalar-' + str(mode) + '.png')
     fig2 = sns.relplot(data=df2, x='Number of nodes after scale', y='Miss rate (%)', kind='line', sort=False)
     if mode == 'grow':
         fig2.set(ylim=(70, 100))
+        fig.axes[0][0].axhline(75, ls='--', c='grey')
     else:
         fig2.set(ylim=(0, 20))
         for ax in fig2.axes[0]:
             ax.invert_xaxis()
+        fig.axes[0][0].axhline(15, ls='--', c='grey')
     fig2.fig.savefig('img/auto-scalar-resize-' + str(mode) + '.png')
     print('DONE.')
 

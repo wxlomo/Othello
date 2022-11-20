@@ -6,9 +6,7 @@
  * Date: Nov. 11, 2022
  *
  * Help: Run the script with following arguments:
- *       - Test type: 'latency', 'throughput'
- *       - Starting pool size: integer between 1 and 8
- *       - Ending pool size: integer between 1 and 8
+ *       - Mode: 'constant', 'shrink', 'grow'
  * Rename the image that is used for testing as 'test.jpg' and
  * place it into the /img folder then set the base_url variable to the
  * http address regards the deployed web application. Run the test,
@@ -22,15 +20,11 @@ import pandas as pd
 from time import time, sleep
 from matplotlib import pyplot as plt
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from config import base_url, manager_url
 
 
-# The http address regards the deployed web application
-base_url = "http://54.235.28.157:5000/"
-# The http address regards the manager application
-manager_url = "http://54.235.28.157:5002/"
-
-key = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-request_numbers = list(range(1, 52, 10))
+key = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+request_numbers = [1, 10, 20, 30, 40, 50, 60, 70]
 time_windows = [0.2, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0, 20.0]
 sns.set_theme(style="whitegrid")
 
@@ -78,7 +72,8 @@ def read_test_latency(read_url):
     try:
         response = requests.post(read_url + str(random_key), verify=False)
         return response.elapsed.total_seconds()
-    except Exception:
+    except Exception as error:
+        print('* Error ' + str(error))
         return 10.0
 
 
@@ -98,7 +93,8 @@ def write_test_latency(write_url):
     try:
         response = requests.post(write_url, files=files, data=data, verify=False)
         return response.elapsed.total_seconds()
-    except Exception:
+    except Exception as error:
+        print('* Error ' + str(error))
         return 10.0
 
 
@@ -115,7 +111,8 @@ def read_test_runtime(read_url):
     try:
         response = requests.post(read_url + str(random_key), verify=False)
         return 1
-    except Exception:
+    except Exception as error:
+        print('* Error ' + str(error))
         return 0
 
 
@@ -135,7 +132,8 @@ def write_test_runtime(write_url):
     try:
         response = requests.post(write_url, files=files, data=data, verify=False)
         return 1
-    except Exception:
+    except Exception as error:
+        print('* Error ' + str(error))
         return 0
 
 
@@ -153,12 +151,12 @@ def config_pool(mode, time=1):
     try:
         if mode == 'shrink':
             for it in range(time):
-                response = requests.post(manager_url + "/stopinstance", verify=False)
+                response = requests.get(manager_url + "/stopinstance", verify=False)
                 if response.status_code == 500:
                     raise Exception('front-end failure')
         elif mode == 'grow':
             for it in range(time):
-                response = requests.post(manager_url + "/startinstance", verify=False)
+                response = requests.get(manager_url + "/startinstance", verify=False)
                 if response.status_code == 500:
                     raise Exception('front-end failure')
         else:
@@ -222,95 +220,77 @@ def throughput_test(time_window, read_ratio):
     return total_request
 
 
-def latency_figure(start_pool_size, end_pool_size, read_ratio=0.5):
+def latency_figure(mode, read_ratio=0.5):
     """Generate the latency trend figure for certain read_ratio
 
         Args:
-          start_pool_size (int): the starting memcache pool size
-          end_pool_size (int): the ending memcache pool size
+          mode (str): the mode of the test (shrink, grow, constant)
           read_ratio (float, optional): the ratio of read requests in total requests
 
         Returns:
           n/a
     """
     data = []
-    config_pool('grow', start_pool_size)
-    current_pool_size = start_pool_size
+    config_pool('shrink', 8)
+    if mode == 'shrink':
+        config_pool('grow', 8)
+    elif mode == 'constant':
+        config_pool('grow', 4)
+    elif mode == 'grow':
+        config_pool('grow', 1)
     for request_number in request_numbers:
-        data.append([request_number, latency_test(request_number, read_ratio), current_pool_size])
-    if start_pool_size > end_pool_size:
-        while current_pool_size >= end_pool_size:
-            sleep(5)
-            current_pool_size -= 1
-            config_pool('shrink', start_pool_size)
-            for request_number in request_numbers:
-                data.append([request_number, latency_test(request_number, read_ratio), current_pool_size])
-    elif start_pool_size < end_pool_size:
-        while current_pool_size <= end_pool_size:
-            sleep(5)
-            current_pool_size += 1
-            config_pool('grow', start_pool_size)
-            for request_number in request_numbers:
-                data.append([request_number, latency_test(request_number, read_ratio), current_pool_size])
-    df = pd.DataFrame(data, columns=['Number of requests', 'Latency (seconds)', 'Memcache pool size'])
-    fig = sns.relplot(data=df, x='Number of requests', y='Latency (seconds)', kind='line', style='Memcache pool size', hue='Memcache pool size')
-    fig.fig.savefig('img/latency_' + str(start_pool_size) + '-' + str(end_pool_size) + '.png')
+        sleep(2)
+        data.append([request_number, latency_test(request_number, read_ratio)])
+        if mode == 'shrink' or mode == 'grow':
+            config_pool(mode, 1)
+    df = pd.DataFrame(data, columns=['Number of requests', 'Latency (seconds)'])
+    df.to_csv('img/manual-latency' + str(mode) + '.csv', encoding='utf-8')
+    fig = sns.relplot(data=df, x='Number of requests', y='Latency (seconds)', kind='line', hue=None)
+    fig.fig.savefig('img/manual-latency-' + str(mode) + '.png')
 
 
-def throughput_figure(start_pool_size, end_pool_size, read_ratio=0.5):
+def throughput_figure(mode, read_ratio=0.5):
     """Generate the latency trend figure for certain read_ratio
 
         Args:
-          start_pool_size (int): the starting memcache pool size
-          end_pool_size (int): the ending memcache pool size
+          mode (str): the mode of the test (shrink, grow, constant)
           read_ratio (float, optional): the ratio of read requests in total requests
 
         Returns:
           n/a
     """
     data = []
-    config_pool('grow', start_pool_size)
-    current_pool_size = start_pool_size
+    config_pool('shrink', 8)
+    if mode == 'shrink':
+        config_pool('grow', 8)
+    elif mode == 'constant':
+        config_pool('grow', 4)
+    elif mode == 'grow':
+        config_pool('grow', 1)
     for time_window in time_windows:
-        data.append([time_window, throughput_test(time_window, read_ratio), current_pool_size])
-    if start_pool_size > end_pool_size:
-        while current_pool_size >= end_pool_size:
-            sleep(5)
-            current_pool_size -= 1
-            config_pool('shrink', start_pool_size)
-            for time_window in time_windows:
-                data.append([time_window, throughput_test(time_window, read_ratio), current_pool_size])
-    elif start_pool_size < end_pool_size:
-        while current_pool_size <= end_pool_size:
-            sleep(5)
-            current_pool_size += 1
-            config_pool('grow', start_pool_size)
-            for time_window in time_windows:
-                data.append([time_window, throughput_test(time_window, read_ratio), current_pool_size])
-    df = pd.DataFrame(data, columns=['Units of time (seconds)', 'Maximum number of requests', 'Memcache pool size'])
-    fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue='Memcache pool size', ci=None)
-    fig.fig.savefig('img/throughput_' + str(start_pool_size) + '-' + str(end_pool_size) + '.png')
+        sleep(2)
+        data.append([time_window, throughput_test(time_window, read_ratio)])
+        if mode == 'shrink' or mode == 'grow':
+            config_pool(mode, 1)
+    df = pd.DataFrame(data, columns=['Units of time (seconds)', 'Maximum number of requests'])
+    df.to_csv('img/manual-throughput' + str(mode) + '.csv', encoding='utf-8')
+    fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue=None, ci=None)
+    fig.fig.savefig('img/manual-throughput-' + str(mode) + '.png')
 
 
-def test_manual(ttype, start_pool_size, end_pool_size):
+def test_manual(mode):
     """Run the performance test
 
         Args:
-            type (str): the test of the performance ('latency', 'throughput')
-            start_pool_size (int): the starting memcache pool size
-            end_pool_size (int): the ending memcache pool size
+            mode (str): the mode of the test (shrink, grow, constant)
 
         Returns:
             n/a
     """
-    print('Executing ' + str(ttype) + ' test from ' + str(start_pool_size) + ' nodes to ' + str(end_pool_size) + ' nodes.')
-    if ttype == 'latency':
-        latency_figure(start_pool_size, end_pool_size)
-    elif ttype == 'throughput':
-        throughput_figure(start_pool_size, end_pool_size)
-    else:
-        raise ValueError('No such type of test')
+    print('Executing test for ' + str(mode) + ' Memcache nodes')
+    latency_figure(mode)
+    throughput_figure(mode)
     print('DONE.')
 
 
-test_manual(str(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
+test_manual(str(sys.argv[1]))
