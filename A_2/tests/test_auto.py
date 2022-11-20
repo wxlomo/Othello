@@ -23,9 +23,9 @@ from matplotlib.ticker import MultipleLocator
 
 
 # The http address regards the deployed web application
-base_url = "http://52.54.105.207:5000/"
+base_url = "http://34.230.79.241:5000/"
 # The http address regards the manager application
-manager_url = "http://52.54.105.207:5002/"
+manager_url = "http://34.230.79.241:5002/"
 
 key = []
 sns.set_theme(style="whitegrid")
@@ -115,9 +115,13 @@ def get_miss():
     Returns:
       float: the memcache miss rate
     """
-    response = requests.get(manager_url + '/1minmiss', verify=False)
-    print('Get miss rate: ' + str(response.json()))
-    return response.json()
+    try:
+        response = requests.get(manager_url + '/1minmiss', verify=False)
+        print('Get miss rate: ' + str(response.json()))
+        return response.json()
+    except Exception as error:
+        print('* Error: ' + str(error))
+        return 50.0
 
 
 def get_node():
@@ -129,9 +133,13 @@ def get_node():
     Returns:
       int: the memcache node number
     """
-    response = requests.get(manager_url + '/numrunning', verify=False)
-    print('Get node number: ' + str(response.json()))
-    return response.json()
+    try:
+        response = requests.get(manager_url + '/numrunning', verify=False)
+        print('Get node number: ' + str(response.json()))
+        return response.json()
+    except Exception as error:
+        print('* Error: ' + str(error))
+        return 0
 
 
 def test_auto(mode):
