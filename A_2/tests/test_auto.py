@@ -201,12 +201,15 @@ def test_auto(mode):
     df2 = pd.DataFrame(data2, columns=['Number of nodes after scale', 'Miss rate (%)'])
     df.to_csv('img/auto-scalar-' + str(mode) + '.csv', encoding='utf-8')
     df2.to_csv('img/auto-scalar-resize-' + str(mode) + '.csv', encoding='utf-8')
-    fig = sns.relplot(data=df, x='Number of keys', y='Miss rate (%)', kind='line', hue='Number of nodes', palette=sns.color_palette("tab10"), sort=False)
+    fig = sns.relplot(data=df, x='Number of keys', y='Miss rate (%)', kind='line', hue='Number of nodes', palette=sns.color_palette("tab10", 4), sort=False)
     fig.axes[0][0].yaxis.set_major_locator(MultipleLocator(5))
     sns.move_legend(fig, 'upper right', bbox_to_anchor=(.8, 1))
     if mode == 'shrink':
+        sns.move_legend(fig, 'upper right', bbox_to_anchor=(.8, 1))
         for ax in fig.axes[0]:
             ax.invert_xaxis()
+    else:
+        sns.move_legend(fig, 'upper right', bbox_to_anchor=(.8, 0.4))
     fig.fig.savefig('img/auto-scalar-' + str(mode) + '.png')
     fig2 = sns.relplot(data=df2, x='Number of nodes after scale', y='Miss rate (%)', kind='line', sort=False)
     if mode == 'grow':
