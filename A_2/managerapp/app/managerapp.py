@@ -85,6 +85,7 @@ def draw_charts_percentage(stats: list, y_label: str, title: str):
 @manager.before_first_request
 def before_first_request():
     managerfunc.init_ec2_instances()
+    response = requests.get("http://localhost:5003/")
     
 
 @manager.route('/')
