@@ -1,16 +1,24 @@
 import boto3
 from datetime               import datetime
+awsKey={
+            'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
+            'aws_secret_access_key' : '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'
+        }
 
+def createGamesTable():
+    db = boto3.resource('dynamodb',
+                          region_name='us-east-1',
+                          aws_access_key_id=awsKey['aws_access_key_id'],
+                          aws_secret_access_key=awsKey['aws_secret_access_key'])
 
-def createGamesTable(client):
-
-
-    gamesTable = client.create_table(TableName="Games",
+    gamesTable = db.create_table(TableName="Games",
                 KeySchema=[
                 {'AttributeName': 'GameId', 'KeyType': 'HASH'}
                 ],
                 AttributeDefinitions=[
-                {'AttributeName': 'GameId', 'AttributeType': 'S'}
+                {'AttributeName': 'GameId', 'AttributeType': 'S'},
+                {'AttributeName': 'OpponentId', 'AttributeType': 'S'},
+                {'AttributeName': 'StatusDate', 'AttributeType': 'S'}
                 ],
                 ProvisionedThroughput={
                 'ReadCapacityUnits': 1,
@@ -34,19 +42,17 @@ def createGamesTable(client):
                         ],
                         'Projection': {
                             'ProjectionType': 'ALL',
-                            'NonKeyAttributes': [
-                                'string'
-                            ]
+                            
                         },
                         'ProvisionedThroughput': {
                             'ReadCapacityUnits': 1,
                             'WriteCapacityUnits': 1
                         }
-                    },
+                    }
                 ]
                 )
-
     gamesTable.wait_until_exists()
+ 
     
     return gamesTable
 
@@ -205,7 +211,7 @@ def getGameInvites(user, gamesTable):
                                         Select='ALL_ATTRIBUTES',
                                         Limit=10,
                                         KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
-                                        ExpressionAttributeValues={ ":r" : user , ":s" : "PENDING"}
+                                        ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
                                         )
     invites=gameInvites['Items']
     return invites
