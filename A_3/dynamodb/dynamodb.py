@@ -2,8 +2,8 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from datetime               import datetime
 awsKey={
-            'aws_access_key_id' :,
-            'aws_secret_access_key' :
+            'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
+            'aws_secret_access_key' : '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'
         }
 
 def createGamesTable():
@@ -140,6 +140,7 @@ def createNewGame(gameId, creator, invitee, gamesTable):
     return item
     
 def updateBoardAndTurn(item, position, current_player, gamesTable):
+    # position need to be a list that contain all the place that changed, can be an empty list
     player_one = item["HostId"]
     player_two = item["OpponentId"]
     gameId     = item["GameId"]

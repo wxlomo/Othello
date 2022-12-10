@@ -1,8 +1,8 @@
 import dynamodb
 import boto3
 awsKey={
-            'aws_access_key_id' :,
-            'aws_secret_access_key' :
+            'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
+            'aws_secret_access_key' : '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'
         }
 if __name__ == '__main__':
     client = boto3.client('dynamodb',
