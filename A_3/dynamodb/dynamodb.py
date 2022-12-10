@@ -1,4 +1,5 @@
 import boto3
+from boto3.dynamodb.conditions import Key
 from datetime               import datetime
 awsKey={
             'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
@@ -66,6 +67,8 @@ def createNewGame(gameId, creator, invitee, gamesTable):
             "OUser"      : creator,
             "Turn"       : invitee,
             "OpponentId" : invitee,
+            "Times"       : now,
+            "Winner"     : 'unfinished',
             '11'           : ' ',
             '12'           : ' ',
             '13'           : ' ',
@@ -140,7 +143,7 @@ def updateBoardAndTurn(item, position, current_player, gamesTable):
     player_one = item["HostId"]
     player_two = item["OpponentId"]
     gameId     = item["GameId"]
-    statusDate = item["StatusDate"]
+    # statusDate = item["StatusDate"]
     # date = statusDate.split("_")[1]
 
     representation = "X"
@@ -170,7 +173,7 @@ def updateBoardAndTurn(item, position, current_player, gamesTable):
                 ':r': next_player},
             ReturnValues="ALL_NEW"
         )
-    return newItem
+    return newItem['Attributes']
 
 def getGame(gameId,gamesTable):
     item=gamesTable.get_item(Key={'GameId':gameId})
@@ -180,7 +183,7 @@ def acceptGameInvite(item, gamesTable):
 
     gameId     = item["GameId"]
     date = str(datetime.now())
-    status = "IN_PROGRESS"
+    status = "INPROGRESS"
     statusDate = status
 
     newItem=gamesTable.update_item(
@@ -191,7 +194,7 @@ def acceptGameInvite(item, gamesTable):
             ReturnValues="ALL_NEW"
         )
 
-    return newItem
+    return newItem['Attributes']
 
 def rejectGameInvite(item, gamesTable):
     gameId     = item["GameId"]
@@ -210,8 +213,46 @@ def getGameInvites(user, gamesTable):
     gameInvites = gamesTable.query(IndexName='OpponentId',
                                         Select='ALL_ATTRIBUTES',
                                         Limit=10,
-                                        KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
-                                        ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
+                                        # KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
+                                        KeyConditionExpression=Key('OpponentId').eq(str(user)) & Key('StatusDate').begins_with("PENDING")
+                                        # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
                                         )
+
     invites=gameInvites['Items']
+    
     return invites
+
+def finishGame(item, gamesTable, winnerId):
+    # winnerID: str of winner's id or 'draw'
+    gameId     = item["GameId"]
+    date = str(datetime.now())
+    status = "FINISHED"
+    statusDate = status
+
+    newItem=gamesTable.update_item(
+            Key={'GameId':gameId},
+            UpdateExpression="set StatusDate = :r, Times = :t , Winner = :w",
+            ExpressionAttributeValues={
+                ':r': statusDate , ':t' : date , ':w' : str(winnerId)},
+            ReturnValues="ALL_NEW"
+        )
+    return newItem['Attributes']
+
+def checkResult(item, gamesTable):
+    boxes=['11','12','13','14','15','16','17','18','21','22','23','24','25','26','27','28','31','32','33','34','35','36','37','38','41','42','43','44','45','46','47',
+        '48','51','52','53','54','55','56','57','58','61','62','63','64','65','66','67','68','71','72','73','74','75','76','77','78','81','82','83','84','85','86','87','88']
+    countO=0
+    countX=0
+    for b in boxes:
+        if item[b]==' ':
+            return 'unfinished'
+        elif item[b]=='O':
+            countO+=1
+        elif item[b]=='X':
+            countX+=1
+    if countO>countX:
+        return item['HostId']
+    if countO<countX:
+        return item['OpponentId']
+    if countO==countX:
+        return 'draw'
