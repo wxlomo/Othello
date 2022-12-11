@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" class="h-100">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Weixuan Yang, Template is built by Mark Otto, Jacob Thornton, and Bootstrap contributors">
+    <link href="src/css/bootstrap.min.css" rel="stylesheet">
+    <link href="src/css/base.css" rel="stylesheet">
+    <title>Othello</title>
+</head>
+
+<body class="d-flex h-100 text-center text-bg-dark" style="background-size:100% 100%; background-image: url(src/img/bg.jpg);">
+    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+        <header class="mb-auto">
+            <div>
+                <h3 class="float-md-start mb-0">Othello</h3>
+                <nav class="nav nav-masthead justify-content-center float-md-end">
+                    <a class="nav-link fw-bold py-1 px-0" href="index.html">Play</a>
+                    <a class="nav-link fw-bold py-1 px-0" href="rule.html">Rule</a>
+                    <a class="nav-link fw-bold py-1 px-0" href="about.html">About</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="px-3">
+            <h1>New Game</h1>
+            <br>
+
+            <form class="navbar-form navbar-left" action="/create" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <table class="tg">
+                        <tbody>
+                            <tr>
+                                <td class="lead tg-0lax"><b>Player Name:</b></td>
+                                <td class="lead tg-0lax">&nbsp&nbsp<input type="text" id="player_name" style="width: 200px; color:black" maxlength="10" name="player_name" required></td>
+                            </tr>
+                            <tr>
+                                <td class="lead tg-0lax"><b>Host Name:</b></td>
+                                <td class="lead tg-0lax">&nbsp&nbsp<input type="text" id="host_name" style="width: 200px; color:black" maxlength="10" name="host_name" required></td>
+                            </tr>
+                            <tr>
+                                <td class="lead tg-0lax"><b>Disk Side:</b></td>
+                                <td class="lead tg-0lax">&nbsp
+                                    <select id="player_side" name="player_side" style="width: 200px; color:black">
+                                        <option value="x">Dark</option>
+                                        <option value="o">Light</option>
+                                      </select></p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="submit" class="btn btn-lg btn-secondary fw-bold border-white bg-white">Create</button>
+            </form>
+        </main>
+
+        <footer class="mt-auto text-white-50">
+            <p>Copyright © 2022 <a href="https://www.linkedin.com/in/weixuanyang/" class="text-white">@Weixuan Yang</a></p>
+        </footer>
+    </div>
+</body>
+
+</html>
