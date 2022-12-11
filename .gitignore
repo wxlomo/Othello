@@ -1,3 +1,6 @@
 **/.vscode
 **/.idea
 **/__pycache__
+**/img/*
+!**/img/index.jpg
+!**/img/test.jpg
