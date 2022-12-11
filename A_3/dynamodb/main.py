@@ -39,3 +39,5 @@ if __name__ == '__main__':
     print(game1)
     game1=dynamodb.finishGame(game1, gamesTable, game1['HostId'])
     print(game1)
+    game1board=dynamodb.makeBoard(game1, gamesTable)
+    print(game1board)
