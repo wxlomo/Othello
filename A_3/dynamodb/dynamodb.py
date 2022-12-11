@@ -19,6 +19,7 @@ def createGamesTable():
                 AttributeDefinitions=[
                 {'AttributeName': 'GameId', 'AttributeType': 'S'},
                 {'AttributeName': 'OpponentId', 'AttributeType': 'S'},
+                {'AttributeName': 'HostId', 'AttributeType': 'S'},
                 {'AttributeName': 'StatusDate', 'AttributeType': 'S'}
                 ],
                 ProvisionedThroughput={
@@ -34,11 +35,39 @@ def createGamesTable():
                                 'KeyType': 'HASH',
 
                             },
+                            
                             {
                                 'AttributeName': 'StatusDate',
                                 'KeyType': 'RANGE',
 
                             }
+                            
+                            
+                        ],
+                        'Projection': {
+                            'ProjectionType': 'ALL',
+                            
+                        },
+                        'ProvisionedThroughput': {
+                            'ReadCapacityUnits': 1,
+                            'WriteCapacityUnits': 1
+                        }
+                    },
+                    {
+                        'IndexName': 'HostId',
+                        'KeySchema': [
+                            {
+                                'AttributeName': 'HostId',
+                                'KeyType': 'HASH',
+
+                            },
+                            
+                            {
+                                'AttributeName': 'StatusDate',
+                                'KeyType': 'RANGE',
+
+                            }
+                            
                             
                         ],
                         'Projection': {
@@ -59,7 +88,7 @@ def createGamesTable():
 
 def createNewGame(gameId, creator, invitee, gamesTable):
     now = str(datetime.now())
-    statusDate = "PENDING"
+    statusDate = "PENDING_"+now
     item={
             "GameId"     : gameId,
             "HostId"     : creator,
@@ -144,9 +173,12 @@ def updateBoardAndTurn(item, position, current_player, gamesTable):
     player_one = item["HostId"]
     player_two = item["OpponentId"]
     gameId     = item["GameId"]
-    # statusDate = item["StatusDate"]
-    # date = statusDate.split("_")[1]
-
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'INPROGRESS':
+        return False
+    if current_player!=item["Turn"]:
+        return False
     representation = "X"
     if item["OUser"] == current_player:
         representation = "O"
@@ -174,7 +206,7 @@ def updateBoardAndTurn(item, position, current_player, gamesTable):
                 ':r': next_player},
             ReturnValues="ALL_NEW"
         )
-    return newItem['Attributes']
+    return True
 
 def getGame(gameId,gamesTable):
     item=gamesTable.get_item(Key={'GameId':gameId})
@@ -183,9 +215,13 @@ def getGame(gameId,gamesTable):
 def acceptGameInvite(item, gamesTable):
 
     gameId     = item["GameId"]
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'PENDING':
+        return 'Not a valid game'
     date = str(datetime.now())
-    status = "INPROGRESS"
-    statusDate = status
+    status = "INPROGRESS_"
+    statusDate = status+date
 
     newItem=gamesTable.update_item(
             Key={'GameId':gameId},
@@ -198,6 +234,10 @@ def acceptGameInvite(item, gamesTable):
     return newItem['Attributes']
 
 def rejectGameInvite(item, gamesTable):
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'PENDING':
+        return 'Not a valid game'
     gameId     = item["GameId"]
     gamesTable.delete_item(
             Key={'GameId':gameId}
@@ -218,17 +258,21 @@ def getGameInvites(user, gamesTable):
                                         KeyConditionExpression=Key('OpponentId').eq(str(user)) & Key('StatusDate').begins_with("PENDING")
                                         # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
                                         )
-
+    print(gameInvites)
     invites=gameInvites['Items']
     
     return invites
 
 def finishGame(item, gamesTable, winnerId):
     # winnerID: str of winner's id or 'draw'
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'INPROGRESS':
+        return 'Not a valid game'
     gameId     = item["GameId"]
     date = str(datetime.now())
-    status = "FINISHED"
-    statusDate = status
+    status = "FINISHED_"
+    statusDate = status+date
 
     newItem=gamesTable.update_item(
             Key={'GameId':gameId},
