@@ -258,8 +258,12 @@ def getGameInvites(user, gamesTable):
                                         KeyConditionExpression=Key('OpponentId').eq(str(user)) & Key('StatusDate').begins_with("PENDING")
                                         # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
                                         )
-    print(gameInvites)
-    invites=gameInvites['Items']
+    
+    gameInvites=gameInvites['Items']
+    n=min(10,len(gameInvites))
+    for i in range (n-1,-1,-1):
+        invites.append(gameInvites[i])
+    
     
     return invites
 
@@ -313,3 +317,73 @@ def makeBoard(item, gamesTable):
     for b in boxes:
         board[int(b[0])][int(b[1])]=item[b]
     return board
+
+
+
+def mergeQueries(host, opp, limit=10):
+    """
+    Taking the two iterators of games you've played in (either host or opponent)
+    you sort through the elements taking the top 10 recent games into a list.
+    Returns a list of Game objects.
+    """
+    games = []
+    
+    i=len(host)-1
+    j=len(opp)-1
+    
+    while len(games) < limit and i>=0 and j >= 0:
+        game_one = host[i]
+        game_two = opp[j]
+        statusDate = game_one["StatusDate"]
+        date1=statusDate.split("_")[1]
+        date1=datetime.strptime(date1, '%Y-%m-%d %H:%M:%S.%f')
+        statusDate = game_two["StatusDate"]
+        date2=statusDate.split("_")[1]
+        date2=datetime.strptime(date2, '%Y-%m-%d %H:%M:%S.%f')
+
+        if date1> date2:
+            games.append(game_one)
+            i-=1
+        else:
+            games.append(game_two)
+            j-=1
+    if len(games) < limit:
+        if i>=0:
+            while len(games) < limit and i>=0:
+                game_one = host[i]
+                games.append(game_one)
+                i-=1
+        elif j>=0:
+            while len(games) < limit and j>=0:
+                game_two = opp[j]
+                games.append(game_two)
+                j-=1
+    return games
+
+def getGamesWithStatus(user, status,gamesTable):
+    """
+    Query for all games that a user appears in and have a certain status.
+    Sorts/merges the results of the two queries for top 10 most recent games.
+    Return a list of Game objects.
+    """
+
+    if user == None:
+        return []
+    hostGames = gamesTable.query(IndexName='HostId',
+                                        Select='ALL_ATTRIBUTES',
+                                        Limit=10,
+                                        # KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
+                                        KeyConditionExpression=Key('HostId').eq(str(user)) & Key('StatusDate').begins_with(status)
+                                        # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
+                                        )
+    opponentGames = gamesTable.query(IndexName='OpponentId',
+                                        Select='ALL_ATTRIBUTES',
+                                        Limit=10,
+                                        # KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
+                                        KeyConditionExpression=Key('OpponentId').eq(str(user)) & Key('StatusDate').begins_with(status)
+                                        # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
+                                        )
+
+    games = mergeQueries(hostGames['Items'],
+                            opponentGames['Items'])
+    return games
