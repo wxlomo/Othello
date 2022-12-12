@@ -5,136 +5,9 @@
  * Author: Weixuan Yang
  * Date: Oct. 11, 2022
 """
-from . import front, config, s3
-from flask import render_template, request, g, escape, jsonify
-from werkzeug.utils import secure_filename
-import mysql.connector
-import requests
-import base64
-import hashlib
-
-
-def get_db():
-    """Establish the connection to the database on rds.
-
-    Args:
-      n/a
-
-    Returns:
-      MySQLConnection: the connector to the available database.
-    """
-    if 'db' not in g:
-        try:
-            g.db = mysql.connector.connect(
-                user=config.rds_config['user'],
-                password=config.rds_config['password'],
-                host=config.rds_config['host'],
-                database=config.rds_config['database']
-            )
-        except Exception as error:
-            front.logger.error('\n* Error in connecting to rds: ' + str(error))
-    return g.db
-
-
-@front.teardown_appcontext
-def teardown_db(exception):
-    """Close the connection to the database after query executed.
-
-    Args:
-      n/a
-
-    Returns:
-      n/a
-    """
-    db = g.pop('db', None)
-    if db is not None:
-        db.close()
-
-
-def db_wrapper(query_type, arg1='', arg2=''):
-    """Connect to the database and try executing queries in the dict.
-
-    Args:
-      query_type (str): the type of the query
-      arg1 (str, optional): the first argument in the query
-      arg2 (str, optional): the second argument in the query
-
-    Returns:
-      MySQLCursor: the cursor contains the requested data, None if query
-        type is not in the dict or the execution failed.
-    """
-    db = get_db()
-    if query_type == 'get_key':
-        query = "SELECT id FROM gallery.key_mapping;"
-    elif query_type == 'get_image':
-        query = f"SELECT value FROM gallery.key_mapping WHERE id = '{arg1}';"
-    elif query_type == 'put_image':
-        query = f"INSERT INTO gallery.key_mapping  (`id`, `value`) VALUES ('{arg1}', '{arg2}');"
-    elif query_type == 'put_image_exist':
-        query = f"UPDATE gallery.key_mapping SET value = '{arg2}' WHERE id = '{arg1}';"
-    elif query_type == 'clear_key':
-        query = "DELETE FROM gallery.key_mapping;"
-    else:
-        front.logger.error('\n* Wrong query type: ' + str(query_type))
-        return None
-    try:
-        front.logger.debug('\n* Executing query: ' + str(query))
-        cursor = db.cursor()
-        cursor.execute(query)
-        if query_type != 'get_key' and query_type != 'get_image':
-            db.commit()
-        return cursor
-    except Exception as error:
-        front.logger.error('\n* Error in executing query: ' + str(error))
-        return None
-
-
-def memcache_request(request_str, key, data=''):
-    """Send the HTTP requests to memcache pool
-
-        Args:
-          request_str (str): the request to be sent
-          key (str): the key to find the designated memcache node
-          data (dir, optional): the data attached to the request
-
-        Returns:
-          requests.Response object: the response of the request, none if error
-    """
-    request_partition = int(hashlib.md5(key.encode()).hexdigest(), 16) // 0x10000000000000000000000000000000
-    response = requests.get("http://localhost:5002/numrunning")
-    n_running = response.json()
-    if n_running != 0:
-        request_pooling = request_partition % int(n_running)
-        response = requests.get("http://localhost:5002/ip/"+str(request_pooling))
-        pool_ip = str(response.json())
-        if request_str=="invalidateKey/":
-            try:
-                response = requests.get("http://"+str(pool_ip)+":5001/invalidateKey/"+ str(key))
-                return response.text
-            except Exception as error:
-                front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
-                return None
-        else:
-            try:
-                response = requests.post("http://"+str(pool_ip)+":5001/" + str(request_str), data=data)
-                return response.json()
-            except Exception as error:
-                front.logger.error('\n* Error in sending request to ' + str(pool_ip) + ', get: ' + str(error))
-                return None
-    return 'Unknown key'
-
-
-def is_image(file):
-    """Check if the file format is an image
-
-    Args:
-      file (file): the file object
-
-    Returns:
-      bool: true if the format of the file is an image
-    """
-    return '.' in file.filename and \
-           file.filename.rsplit('.', 1)[1].lower() in {'jpg', 'jpeg', 'tiff', 'gif', 'tif', 'bmp', 'webp', 'png'}
+import dynamodb
+from . import front, config
+from flask import render_template, request, escape, jsonify, session, redirect
 
 
 @front.route('/')
@@ -150,9 +23,9 @@ def get_home():
     return render_template('index.html')
 
 
-@front.route('/upload')
-def get_upload():
-    """Upload page render.
+@front.route('/create')
+def get_create():
+    """New game creating page render.
 
     Args:
       n/a
@@ -160,12 +33,12 @@ def get_upload():
     Returns:
       str: the arguments for the Jinja template
     """
-    return render_template('upload.html')
+    return render_template('create.html')
 
 
-@front.route('/view')
-def get_key():
-    """View all page render.
+@front.route('/join')
+def get_join():
+    """Existing game joining page render.
 
     Args:
       n/a
@@ -173,54 +46,35 @@ def get_key():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Viewing all image')
-    cursor = db_wrapper('get_key')
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    return render_template('view.html', cursor=cursor)
+    all_hosts = []  # the function to retrieve all available hosts
+    return render_template('join.html', hosts=all_hosts)
 
 
-@front.route('/retrieve', methods=['POST'])
-def get_image():
-    """Retrieve page render.
+@front.route('/rule')
+def get_rule():
+    """Rule page render.
 
     Args:
       n/a
 
     Returns:
       str: the arguments for the Jinja template
-      
     """
-    key = request.form['key']
-    front.logger.debug('\n* Retrieving an image by key: ' + str(key))
-    
-    response = memcache_request('get', key, {'key': key})  # retrieve the image by key from memcache
-    
-    if not response:
-        return render_template('result.html', result='Something Wrong :(')
-    if response == 'Unknown key':  # if not in memcache
-        cursor = db_wrapper('get_image', key)
-        if not cursor:
-            return render_template('result.html', result='Something Wrong :(')
-        filename = ''
-        for row in cursor:
-            filename = row[0]
-        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
-        if not filename:  # the key is either not in database
-            return render_template('result.html', result='Your Key Is Invalid :(')
-        try:  # the key is in database
-            image = base64.b64encode(
-                s3.get_object(Bucket=config.s3_config['name'], Key=filename)['Body'].read()).decode("utf-8")
-        except Exception as error:
-            front.logger.debug('\n* Error: ' + str(error))
-            return render_template('result.html', result='Something Wrong :(')
-        response = memcache_request('put', key, {'key': key, 'value': image})  # cache the key and image
-        
-        if not response:
-            return render_template('result.html', result='Something Wrong :(')
-    else:  # if in memcache
-        image = response
-    return render_template('retrieve.html', image='data:image/*; base64, {0}'.format(image), key=escape(key))
+    return render_template('rule.html')
+
+
+@front.route('/rank')
+def get_rank():
+    """Rank page render.
+
+    Args:
+      n/a
+
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    rank = []  # Retrieve the rank data from S3
+    return render_template('rank.html', rank=rank)
 
 
 @front.route('/about')
@@ -233,13 +87,12 @@ def get_about():
     Returns:
       str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Viewing about')
     return render_template('about.html')
 
 
-@front.route('/putImage', methods=['POST'])
-def put_image():
-    """Commit the page uploading to MemCache and s3.
+@front.route('/create_game', methods=['POST'])
+def create_game():
+    """Create a new game.
 
     Args:
       n/a
@@ -247,283 +100,156 @@ def put_image():
     Returns:
       str: the arguments for the Jinja template
     """
-    image_file = request.files['image']
-    image_file.filename = secure_filename(image_file.filename)
-    key = request.form['key']
-    front.logger.debug('\n* Uploading an image' + str(image_file.filename) + ' with key: ' + str(key))
-    if not is_image(image_file):
-        return render_template('result.html', result='Input File Format Is Not Supported :(')
-    response = memcache_request('get', key, {'key': key})  # retrieve the image by key from memcache
-    
-    if not response:
-        return render_template('result.html', result='Something Wrong :(')
-    if response == 'Unknown key':  # if not in memcache
-        cursor = db_wrapper('get_image', key)
-        if not cursor:
-            return render_template('result.html', result='Something Wrong :(')
-        filename = ''
-        for row in cursor:
-            filename = row[0]
-        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
-        if not filename:  # the key is either not in database
-            cursor = db_wrapper('put_image', key, image_file.filename)  # insert the key and filename to database
-        else:  # the key is in database
-            cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
-    else:  # the key is in memcache
-        response = memcache_request('invalidateKey/', key)  # invalidate the existed key
-        front.logger.debug(response)
-        if not response:
-            return render_template('result.html', result='Something Wrong :(')
-        cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
-    if not cursor:
-        return render_template('result.html', result='Something Wrong :(')
-    try:
-        s3.put_object(Bucket=config.s3_config['name'], Key=image_file.filename, Body=image_file)
-    except Exception as error:
-        front.logger.debug('\n* Error: ' + str(error))
-        return render_template('result.html', result='Something Wrong :(')
-    return render_template('result.html', result='Your Image Has Been Uploaded :)')
+    session['player_name'] = request.form['player_name']
+    player_side = request.form['player_side']
+    front.logger.debug('\n* Creating a game with name: ' + str(session['player_name']))
+    game_id = escape(session['player_name'])  # the function to create a game to dynamoDB
+    return redirect('/game/' + str(game_id))
 
 
-@front.route('/api/upload', methods=['POST'])
-def put_image_api():
-    """The api to upload an image to the MemCache and s3
+@front.route('/join_game', methods=['POST'])
+def join_game():
+    """Join an existing game.
 
     Args:
       n/a
 
     Returns:
-      dict: the JSON format response of the HTTP request
+      str: the arguments for the Jinja template
     """
-    image_file = request.files['file']
-    image_file.filename = secure_filename(image_file.filename)
-    key = request.form['key']
-    front.logger.debug('\n* Uploading an image' + str(image_file.filename) + ' with key: ' + str(key))
-    if not key:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 400,
-                'message': 'Bad Request: Input key is invalid.'
-            }
-        }
-    if len(key) > 95:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 400,
-                'message': 'Bad Request: Input key is too long, it has to shorter than 100 characters.'
-            }
-        }
-    if not image_file:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 400,
-                'message': 'Bad Request: Input file is invalid.'
-            }
-        }
-    if not is_image(image_file):
-        return {
-            'success': 'false',
-            'error': {
-                'code': 400,
-                'message': 'Bad Request: Input file format is not supported.'
-            }
-        }
-    response = memcache_request('get', key, {'key': key})  # retrieve the image by key from memcache
-    front.logger.debug(response)
-    if not response:
-        return render_template('result.html', result='Something Wrong :(')
-    if response == 'Unknown key':  # if not in memcache
-        cursor = db_wrapper('get_image', key)
-        if not cursor:
-            return {
-                'success': 'false',
-                'error': {
-                    'code': 500,
-                    'message': 'Internal Server Error: Fail in connecting to rds'
-                }
-            }
-        filename = ''
-        for row in cursor:
-            filename = row[0]
-        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
-        if not filename:  # the key is either not in database
-            cursor = db_wrapper('put_image', key, image_file.filename)  # insert the key and filename to database
-        else:  # the key is in database
-            cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
-    else:  # the key is in memcache
-        response = memcache_request('invalidateKey/', key)  # invalidate the existed key
-        front.logger.debug(response)
-        if not response:
-            return render_template('result.html', result='Something Wrong :(')
-        cursor = db_wrapper('put_image_exist', key, image_file.filename)  # update the filename in the database
-    if not cursor:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to rds'
-            }
-        }
-    try:
-        s3.put_object(Bucket=config.s3_config['name'], Key=image_file.filename, Body=image_file)
-    except Exception as error:
-        front.logger.debug('\n* Error: ' + str(error))
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: s3 error, ' + str(error)
-            }
-        }
-    return {
-        'success': 'true',
-    }
-
-
-@front.route('/api/list_keys', methods=['POST'])
-def get_key_api():
-    """The api to view all the keys stored in the database
-
-    Args:
-      n/a
-
-    Returns:
-      dict: the JSON format response of the HTTP request
-    """
-    front.logger.debug('\n* Viewing all image')
-    keys = []
-    cursor = db_wrapper('get_key')
-    if not cursor:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to rds'
-            }
-        }
-    for row in cursor:
-        keys.append(row[0])
-    if len(keys) == 0:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 404,
-                'message': 'Not Found: There is no image in the gallery.'
-            }
-        }
+    session['player_name'] = request.form['player_name']
+    game_id = request.form['game_id']
+    front.logger.debug('\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
+    if True:  # Check if game id exist
+        return redirect('/game/' + str(game_id))
     else:
-        return {
-            'success': 'true',
-            'keys': keys
-        }
+        return render_template('result', title='Fail to Join the Game', message='The game you want to join does not exist, please try again.')
 
 
-@front.route('/api/key/<key_value>', methods=['POST'])
-def get_image_api(key_value):
-    """The api to retrieve an image by the given key from MemCache or database
+@front.route('/game/<game_id>/')
+def game(game_id):
+    """Game board page render.
 
     Args:
-      key_value (str): the key of the image
+      game_id (str): the identity of the game
 
     Returns:
-      dict: the JSON format response of the HTTP request
-      
+      str: the arguments for the Jinja template
     """
-    
-    key = key_value
-    front.logger.debug('\n* Retrieving an image by key: ' + str(key))
-    response = memcache_request('get', key, {'key': key})  # retrieve the image by key from memcache
-    front.logger.debug(response)
-    if not response:
-        return render_template('result.html', result='Something Wrong :(')
-    if response == 'Unknown key':  # if not in memcache
-        cursor = db_wrapper('get_image', key)
-        if not cursor:
-            return {
-                'success': 'false',
-                'error': {
-                    'code': 500,
-                    'message': 'Internal Server Error: Fail in connecting to rds'
-                }
-            }
-        filename = ''
-        for row in cursor:
-            filename = row[0]
-        front.logger.debug('\n* Retrieving returns filename: ' + str(filename))
-        if not filename:  # the key is either not in database
-            return {
-                'success': 'false',
-                'error': {
-                    'code': 404,
-                    'message': 'Not Found: The given key is invalid.'
-                }
-            }
-        try:  # the key is in database
-            image = base64.b64encode(
-                s3.get_object(Bucket=config.s3_config['name'], Key=filename)['Body'].read()).decode("utf-8")
-        except Exception as error:
-            front.logger.debug('\n* Error: ' + str(error))
-            return {
-                'success': 'false',
-                'error': {
-                    'code': 500,
-                    'message': 'Internal Server Error: s3 error, ' + str(error)
-                }
-            }
-        response = memcache_request('put', key, {'key': key, 'value': image})
-        front.logger.debug(response)
-        if not response:
-            return render_template('result.html', result='Something Wrong :(')
-    else:  # the key is in memcache
-        image = response
-    return {
-        'success': 'true',
-        'content': image
-    }
+    player_name = session['player_name']
+    if not player_name or not game_id:
+        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+    disks = []  # get the disks from dynamoDB
+    board = board_render(game_id, player_name, disks)
+    if len(board) != 64:
+        return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+    foe_name = ''  # get the name of another player
+    front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
+    if not foe_name:  # check if another player joined
+        message = 'Waiting for another player to join...'
+    else:
+        if True:  # check if it is current player's turn
+            message = 'Now it is your turn!'
+        else:
+            message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
+    return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
 
-@front.route('/api/teardown', methods=['POST'])
-def teardown_api():
-    """The api to get rid of the data in RDS and S3
+@front.route('/game/<game_id>/move/<loc>')
+def move(game_id, loc):
+    """Player makes a move
 
     Args:
-      n/a
+      game_id (str): the identity of the game
+      loc (str): the location to place the disk
 
     Returns:
-      dict: the JSON format response of the HTTP request
-
+      str: the arguments for the Jinja template
     """
-    front.logger.debug('\n* Deleting images from s3...')
-    try:
-        response = s3.list_objects_v2(Bucket=config.s3_config['name'])
-        if 'Content' in response:  # bucket is not empty
-            for obj in response['Content']:
-                front.logger.debug('  Deleting: ' + str(obj['Key']))
-                s3.delete_objects(Bucket=config.s3_config['name'], Delete={'Objects': [{'Key': obj['Key']}]})
-        else:  # bucket is empty
-            front.logger.debug('  Bucket is empty')
-    except Exception as error:
-        front.logger.debug('\n* Error: ' + str(error))
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: s3 error, ' + str(error)
-            }
-        }
-    front.logger.debug('\n* Clearing RDS database...')
-    cursor = db_wrapper('clear_key')
-    if not cursor:
-        return {
-            'success': 'false',
-            'error': {
-                'code': 500,
-                'message': 'Internal Server Error: Fail in connecting to rds'
-            }
-        }
-    return {
-        'success': 'true'
-    }
+    player_name = session['player_name']
+    if not player_name or not game_id or not loc:
+        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+    if False:  # check if the move can be made
+        return render_template('result', title='403 Forbidden', message='This move cannot be performed.')
+    # update the database with loc
+    front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
+    return redirect('/game/' + str(game_id))
+
+
+@front.route('/game/<game_id>/surrender')
+def surrender(game_id):
+    """A player surrender
+
+    Args:
+      game_id (str): the identity of the game
+
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    player_name = session['player_name']
+    if not player_name or not game_id:
+        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+    ended = True  # mark the game as ended on dynamoDB
+    player_score = 0  # mark the current player's score as 0
+    front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
+    return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
+
+
+@front.route('/game/<game_id>/refresh')
+def refresh(game_id):
+    """Refresh the game status
+
+    Args:
+      game_id (str): the identity of the game
+
+    Returns:
+      str: the arguments for the Jinja template
+    """
+    player_name = session['player_name']
+    if not player_name or not game_id:
+        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+    ended = ""  # check if the game ends
+    if ended:
+        player_score = 0  # get the player's final score
+        foe_score = 0  # get the other player's final score
+        front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score) + ', their foe has score ' + str(foe_score))
+        if player_score > foe_score:
+            # upload the final score to the ranking
+            return render_template('result', title='You Win :)', message='Your final score is ' + str(player_score) + '.')
+        elif player_score < foe_score:
+            return render_template('result', title='You Lose :(', message='Your final score is ' + str(player_score) + '.')
+        else:
+            return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
+    else:
+        return redirect('/game/' + str(game_id))
+
+
+def board_render(game_id, player_name, disks):
+    """Update the disks and placeable places on the game board
+
+    Args:
+      game_id (str): the identity of the game
+      player_name (str): the name of current player
+      disks (list): the list of disks on the game board
+
+    Returns:
+      list: the updated lattices list to update the page
+    """
+    index = [outer * 10 + inner for inner in range(1, 9) for outer in range(1, 9)]
+    current_index = 0
+    grid = []  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
+    board = []
+    for lattice in grid:
+        if lattice == 'dark':
+            board.append('<img src="src/img/dark.svg">')
+        elif lattice == 'light':
+            board.append('<img src="src/img/light.svg">')
+        elif lattice == 'placeable':
+            board.append('<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(game_id) + '/move/' + index[current_index] + '">')
+        else:
+            board.append('')
+        current_index += 1
+    return board
+
+
+

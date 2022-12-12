@@ -36,82 +36,13 @@
         <main class="px-3">
             <form action="/play" method="post" enctype="multipart/form-data">
                 <div class="board-container">
-                    <!-- First row -->
-                    <div><img src="src/img/dark.svg"></div>
-                    <div><img src="src/img/light.svg"></div>
-                    <div><input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/play/13"></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Second row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Third row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Fourth row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Fifth row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Sixth row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Seventh row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <!-- Eighth row -->
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
+                    {% for row in board %}
+                    <div>{{row[0]}}</div>
+                    {% endfor %}
                 </div>
             </form>
             <p class="lead">
-                <form action="/surrender" method="post" enctype="multipart/form-data">
+                <form action="{{surr}}" method="post" enctype="multipart/form-data">
                     <table class="tg">
                         <tbody>
                             <tr>
