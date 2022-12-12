@@ -134,7 +134,7 @@ def create_game():
       str: the arguments for the Jinja template
     """
     player_name = request.form['player_name'].strip()
-    if player_name:
+    if player_name or player_name == 'None':
         session['player_name'] = player_name.strip()
     else:
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
@@ -157,7 +157,7 @@ def join_game():
       str: the arguments for the Jinja template
     """
     player_name = request.form['player_name'].strip()
-    if player_name:
+    if player_name or player_name == 'None':
         session['player_name'] = player_name.strip()
     else:
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
@@ -186,15 +186,20 @@ def game(game_id):
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     disks = []  # get the disks from dynamoDB
+    response = dynamodb.getGame(game_id, game_entry)
+    front.logger.debug(str(response))
+    if not response:
+        return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+    game_data = dynamodb.makeBoard(response, game_entry)
     board = board_render(game_id, player_name, disks)
     if len(board) != 64:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    foe_name = ''  # get the name of another player
+    foe_name = game_data['OpponentId']
     front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
-    if not foe_name:  # check if another player joined
+    if not foe_name or foe_name == 'None':
         message = 'Waiting for another player to join...'
     else:
-        if True:  # check if it is current player's turn
+        if game_data['Turn'] == str(player_name):
             message = 'Now it is your turn!'
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
@@ -213,6 +218,7 @@ def move(game_id, loc):
       str: the arguments for the Jinja template
     """
     player_name = session['player_name']
+    #need loc and tiles to flip
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     if False:  # check if the move can be made
@@ -236,7 +242,13 @@ def surrender(game_id):
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     ended = True  # mark the game as ended on dynamoDB
-    player_score = 0  # mark the current player's score as 0
+    game_data = dynamodb.getGame(game_id, game_entry)
+    front.logger.debug(str(game_data))
+    if player_name == game_data['HostId']:
+        winner = game_data['OpponentId']
+    else:
+        winner = game_data['HostId']
+    dynamodb.finishGame(game_data, game_entry, winner)
     front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
     return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
 
@@ -254,15 +266,18 @@ def refresh(game_id):
     player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    ended = ""  # check if the game ends
-    if ended:
-        player_score = 0  # get the player's final score
-        foe_score = 0  # get the other player's final score
-        front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score) + ', their foe has score ' + str(foe_score))
-        if player_score > foe_score:
+    game_data = dynamodb.getGame(game_id, game_entry)
+    front.logger.debug(str(game_data))
+    status = game_data["StatusDate"].split("_")[0]
+    if status == 'FINISHED':
+        player_score = board_count(game_id, player_name, dynamodb.makeBoard(game_data, game_entry))
+        front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score))
+        winner = game_data['Winner']
+        if player_name == winner:
             # upload the final score to the ranking
             return render_template('result', title='You Win :)', message='Your final score is ' + str(player_score) + '.')
-        elif player_score < foe_score:
+            # Your final score is ' + str(player_score) +
+        elif winner != 'draw':
             return render_template('result', title='You Lose :(', message='Your final score is ' + str(player_score) + '.')
         else:
             return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
@@ -281,7 +296,7 @@ def board_render(game_id, player_name, disks):
     Returns:
       list: the updated lattices list to update the page
     """
-    index = [[outer * 10 + inner for inner in range(1, 9)] for outer in range(1, 9)]
+    index = [[outer * 10 + inner for inner in range(9)] for outer in range(9)]
     grid = []  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
     board = []
     for row in range(len(index)):
@@ -297,5 +312,95 @@ def board_render(game_id, player_name, disks):
                 board.append(' ')
     return board
 
+def board_count(game_id, player_name, disks):
+    """Count the number of the disks on board
+
+    Args:
+      game_id (str): the identity of the game
+      player_name (str): the name of current player
+      disks (list): the list of disks on the game board
+
+    Returns:
+      int: the number of the disks with designated color
+    """
+    count = 0
+    return count
 
 
+def isOnBoard(x, y):
+# Returns True if the coordinates are located on the board.
+  return x >= 0 and x <= 7 and y >= 0 and y <=7
+
+def isValidMove(board, tile, xstart, ystart):
+
+  # Returns False if the player's move on space xstart, ystart is invalid.
+
+  # If it is a valid move, returns a list of spaces that would become the player's if they made a move here.
+
+  if board[xstart][ystart] != ' ' or not isOnBoard(xstart, ystart):
+      return False
+  board[xstart][ystart] = tile # temporarily set the tile on the board.
+
+  if tile == 'X':
+      otherTile = 'O'
+  else:
+      otherTile = 'X'
+
+  tilesToFlip = []
+  for xdirection, ydirection in [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]:
+      x, y = xstart, ystart
+      x += xdirection # first step in the direction
+      y += ydirection # first step in the direction
+      if isOnBoard(x, y) and board[x][y] == otherTile:
+          # There is a piece belonging to the other player next to our piece.
+          x += xdirection
+          y += ydirection
+          if not isOnBoard(x, y):
+              continue
+          while board[x][y] == otherTile:
+              x += xdirection
+              y += ydirection
+              if not isOnBoard(x, y): # break out of while loop, then continue in for loop
+                  break
+          if not isOnBoard(x, y):
+              continue
+          if board[x][y] == tile:
+              # There are pieces to flip over. Go in the reverse direction until we reach the original space, noting all the tiles along the way.
+              while True:
+                  x -= xdirection
+                  y -= ydirection
+                  if x == xstart and y == ystart:
+                      break
+                  tilesToFlip.append([x, y])
+
+
+
+  board[xstart][ystart] = ' ' # restore the empty space
+
+  if len(tilesToFlip) == 0: # If no tiles were flipped, this is not a valid move.
+
+      return False
+
+  return tilesToFlip
+
+def getValidMoves(board, tile):
+
+ # Returns a list of [x,y] lists of valid moves for the given player on the given board.
+  validMoves = []
+  for x in range(8):
+    for y in range(8):
+      if isValidMove(board, tile, x, y) != False:
+        validMoves.append([x, y])
+  return validMoves
+
+def getBoardWithValidMoves(board, tile):
+  # Returns a new board with . marking the valid moves the given player can make.
+  dupeBoard = []
+  for i in range(8):
+    dupeBoard.append([' '] * 8)
+  for x in range(8):
+    for y in range(8):
+      dupeBoard[x][y] = board[x][y]
+  for x, y in getValidMoves(dupeBoard, tile):
+      dupeBoard[x][y] = '.'
+  return dupeBoard
