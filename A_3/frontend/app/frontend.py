@@ -7,30 +7,41 @@
 """
 import dynamodb
 import boto3
-from uuid                           import uuid4
+import hashlib
 from . import front, config
 from flask import render_template, request, escape, jsonify, session, redirect
-awsKey=config.awsKey
+
+global db
+global game_entry
+global dbclient
 
 
 @front.before_first_request
-# create games table if not exist
-def initTable():
-  global dbclient
-  global db
-  global gamesTable
-  dbclient = boto3.client('dynamodb',
-                        region_name='us-east-1',
-                        aws_access_key_id=awsKey['aws_access_key_id'],
-                        aws_secret_access_key=awsKey['aws_secret_access_key'])
-  db = boto3.resource('dynamodb',
-                        region_name='us-east-1',
-                        aws_access_key_id=awsKey['aws_access_key_id'],
-                        aws_secret_access_key=awsKey['aws_secret_access_key'])
+def init():
+    """Create game tables
 
-  if 'Games' not in dbclient.list_tables()['TableNames']:
-      dynamodb.createGamesTable()
-  gamesTable=db.Table('Games')
+    Args:
+      n/a
+
+    Returns:
+      n/a
+    """
+    global db
+    global game_entry
+    global dbclient
+    dbclient = boto3.client('dynamodb',
+                            region_name=config.aws_key['aws_region'],
+                            aws_access_key_id=config.aws_key['aws_access_key_id'],
+                            aws_secret_access_key=config.aws_key['aws_secret_access_key'])
+    db = boto3.resource('dynamodb',
+                        region_name=config.aws_key['aws_region'],
+                        aws_access_key_id=config.aws_key['aws_access_key_id'],
+                        aws_secret_access_key=config.aws_key['aws_secret_access_key'])
+    if 'Games' not in dbclient.list_tables()['TableNames']:
+        dynamodb.createGamesTable()
+    game_entry = db.Table('Games')
+
+
 @front.route('/')
 def get_home():
     """Home page render.
@@ -67,10 +78,8 @@ def get_join():
     Returns:
       str: the arguments for the Jinja template
     """
-    last10pending=dynamodb.getGameInvites('None', gamesTable)
-    all_hosts = []  # the function to retrieve all available hosts
-    for item in last10pending:
-      all_hosts.append(item['GameId'])
+    all_hosts = dynamodb.getGameInvites('None', game_entry)['GameId']
+    front.logger.debug('\n* Current pending games: ' + str(all_hosts))
     return render_template('join.html', hosts=all_hosts)
 
 
@@ -124,15 +133,16 @@ def create_game():
     Returns:
       str: the arguments for the Jinja template
     """
-    formInput = request.form['player_name']
-    if formInput and formInput.strip() and formInput != 'None' and formInput.strip() != 'None':
-      session['player_name'] = formInput.strip()
+    player_name = request.form['player_name'].strip()
+    if player_name:
+        session['player_name'] = player_name.strip()
     else:
-      return 'invalid name'
-    # layer_side = request.form['player_side']  #dont support chosing side
+        return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
+    # layer_side = request.form['player_side']  # do not support choosing side
     front.logger.debug('\n* Creating a game with name: ' + str(session['player_name']))
-    game_id = str(uuid4()) #escape(session['player_name'])  # the function to create a game to dynamoDB #random gameid each time
-    item=dynamodb.createNewGame(game_id, str(session['player_name']), 'None', gamesTable)
+    game_id = str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
+    response = dynamodb.createNewGame(game_id, str(session['player_name']), 'None', game_entry)
+    front.logger.debug(str(response))
     return redirect('/game/' + str(game_id))
 
 
@@ -146,19 +156,20 @@ def join_game():
     Returns:
       str: the arguments for the Jinja template
     """
-    formInput = request.form['player_name']
-    if formInput and formInput.strip() and formInput != 'None' and formInput.strip() != 'None':
-      session['player_name'] = formInput.strip()
+    player_name = request.form['player_name'].strip()
+    if player_name:
+        session['player_name'] = player_name.strip()
     else:
-      return 'invalid name'
+        return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
     game_id = request.form['game_id']
     front.logger.debug('\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
-    item=dynamodb.getGame(game_id,gamesTable)
-    game=dynamodb.acceptGameInvite(item,gamesTable,str(session["player_name"]))
-    if True:  # Check if game id exist
-        return redirect('/game/' + str(game_id))
-    else:
+    response = dynamodb.getGame(game_id, game_entry)
+    front.logger.debug(str(response))
+    if not response:
         return render_template('result', title='Fail to Join the Game', message='The game you want to join does not exist, please try again.')
+    response = dynamodb.acceptGameInvite(response, game_entry, str(session["player_name"]))
+    front.logger.debug(str(response))
+    return redirect('/game/' + str(game_id))
 
 
 @front.route('/game/<game_id>/')
@@ -270,20 +281,20 @@ def board_render(game_id, player_name, disks):
     Returns:
       list: the updated lattices list to update the page
     """
-    index = [outer * 10 + inner for inner in range(1, 9) for outer in range(1, 9)]
-    current_index = 0
+    index = [[outer * 10 + inner for inner in range(1, 9)] for outer in range(1, 9)]
     grid = []  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
     board = []
-    for lattice in grid:
-        if lattice == 'dark':
-            board.append('<img src="src/img/dark.svg">')
-        elif lattice == 'light':
-            board.append('<img src="src/img/light.svg">')
-        elif lattice == 'placeable':
-            board.append('<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(game_id) + '/move/' + index[current_index] + '">')
-        else:
-            board.append('')
-        current_index += 1
+    for row in range(len(index)):
+        for lattice in range(len(index[row])):
+            current_disk = grid[row][lattice]
+            if current_disk == 'X':
+                board.append('<img src="src/img/dark.svg">')
+            elif current_disk == 'O':
+                board.append('<img src="src/img/light.svg">')
+            elif current_disk == 'placeable':
+                board.append('<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(game_id) + '/move/' + index[row][lattice] + '">')
+            else:
+                board.append(' ')
     return board
 
 
