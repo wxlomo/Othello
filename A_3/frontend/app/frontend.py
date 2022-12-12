@@ -20,17 +20,17 @@ def get_db():
       dynamoDB Object: data
     """
     if 'db' not in g:
-        dbclient = boto3.client('dynamodb',
-                                region_name=config.aws_key['aws_region'],
-                                aws_access_key_id=config.aws_key['aws_access_key_id'],
-                                aws_secret_access_key=config.aws_key['aws_secret_access_key'])
-        db = boto3.resource('dynamodb',
-                            region_name=config.aws_key['aws_region'],
-                            aws_access_key_id=config.aws_key['aws_access_key_id'],
-                            aws_secret_access_key=config.aws_key['aws_secret_access_key'])
-        if 'Games' not in dbclient.list_tables()['TableNames']:
+        dynamodb_client = boto3.client('dynamodb',
+                                       region_name=config.aws_key['aws_region'],
+                                       aws_access_key_id=config.aws_key['aws_access_key_id'],
+                                       aws_secret_access_key=config.aws_key['aws_secret_access_key'])
+        dynamodb = boto3.resource('dynamodb',
+                                  region_name=config.aws_key['aws_region'],
+                                  aws_access_key_id=config.aws_key['aws_access_key_id'],
+                                  aws_secret_access_key=config.aws_key['aws_secret_access_key'])
+        if 'Games' not in dynamodb_client.list_tables()['TableNames']:
             ddb.create_game_table()
-        g.game_table = db.Table('Games')
+        g.db = dynamodb.Table('Games')
     return g.game_table
 
 
@@ -154,11 +154,13 @@ def join_game():
     else:
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
     game_id = request.form['game_id']
-    front.logger.debug('\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
+    front.logger.debug(
+        '\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
     response = ddb.get(game_id, get_db())
     front.logger.debug(str(response))
     if not response:
-        return render_template('result', title='Fail to Join the Game', message='The game you want to join does not exist, please try again.')
+        return render_template('result', title='Fail to Join the Game',
+                               message='The game you want to join does not exist, please try again.')
     response = ddb.join_existed_game(response, get_db(), str(session["player_name"]))
     front.logger.debug(str(response))
     return redirect('/game/' + str(game_id))
@@ -272,10 +274,12 @@ def refresh(game_id):
         front.logger.debug(str(response))
         if player_name == winner:
             # upload the final score to the ranking
-            return render_template('result', title='You Win :)', message='Your final score is ' + str(player_score) + '.')
+            return render_template('result', title='You Win :)',
+                                   message='Your final score is ' + str(player_score) + '.')
             # Your final score is ' + str(player_score) +
         elif winner != 'draw':
-            return render_template('result', title='You Lose :(', message='Your final score is ' + str(player_score) + '.')
+            return render_template('result', title='You Lose :(',
+                                   message='Your final score is ' + str(player_score) + '.')
         else:
             return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
     else:
@@ -304,86 +308,87 @@ def board_render(game_id, player_name, disks):
             elif current_disk == 'O':
                 board.append('<img src="src/img/light.svg">')
             elif current_disk == 'placeable':
-                board.append('<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(game_id) + '/move/' + str(index[row][lattice]) + '">')
+                board.append(
+                    '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(
+                        game_id) + '/move/' + str(index[row][lattice]) + '">')
             else:
                 board.append(' ')
     return board
 
 
 def isOnBoard(x, y):
-# Returns True if the coordinates are located on the board.
-  return x >= 0 and x <= 7 and y >= 0 and y <=7
+    # Returns True if the coordinates are located on the board.
+    return x >= 0 and x <= 7 and y >= 0 and y <= 7
+
 
 def isValidMove(board, tile, xstart, ystart):
+    # Returns False if the player's move on space xstart, ystart is invalid.
 
-  # Returns False if the player's move on space xstart, ystart is invalid.
+    # If it is a valid move, returns a list of spaces that would become the player's if they made a move here.
 
-  # If it is a valid move, returns a list of spaces that would become the player's if they made a move here.
+    if board[xstart][ystart] != ' ' or not isOnBoard(xstart, ystart):
+        return False
+    board[xstart][ystart] = tile  # temporarily set the tile on the board.
 
-  if board[xstart][ystart] != ' ' or not isOnBoard(xstart, ystart):
-      return False
-  board[xstart][ystart] = tile # temporarily set the tile on the board.
+    if tile == 'X':
+        otherTile = 'O'
+    else:
+        otherTile = 'X'
 
-  if tile == 'X':
-      otherTile = 'O'
-  else:
-      otherTile = 'X'
+    tilesToFlip = []
+    for xdirection, ydirection in [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]:
+        x, y = xstart, ystart
+        x += xdirection  # first step in the direction
+        y += ydirection  # first step in the direction
+        if isOnBoard(x, y) and board[x][y] == otherTile:
+            # There is a piece belonging to the other player next to our piece.
+            x += xdirection
+            y += ydirection
+            if not isOnBoard(x, y):
+                continue
+            while board[x][y] == otherTile:
+                x += xdirection
+                y += ydirection
+                if not isOnBoard(x, y):  # break out of while loop, then continue in for loop
+                    break
+            if not isOnBoard(x, y):
+                continue
+            if board[x][y] == tile:
+                # There are pieces to flip over. Go in the reverse direction until we reach the original space, noting all the tiles along the way.
+                while True:
+                    x -= xdirection
+                    y -= ydirection
+                    if x == xstart and y == ystart:
+                        break
+                    tilesToFlip.append([x, y])
 
-  tilesToFlip = []
-  for xdirection, ydirection in [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]:
-      x, y = xstart, ystart
-      x += xdirection # first step in the direction
-      y += ydirection # first step in the direction
-      if isOnBoard(x, y) and board[x][y] == otherTile:
-          # There is a piece belonging to the other player next to our piece.
-          x += xdirection
-          y += ydirection
-          if not isOnBoard(x, y):
-              continue
-          while board[x][y] == otherTile:
-              x += xdirection
-              y += ydirection
-              if not isOnBoard(x, y): # break out of while loop, then continue in for loop
-                  break
-          if not isOnBoard(x, y):
-              continue
-          if board[x][y] == tile:
-              # There are pieces to flip over. Go in the reverse direction until we reach the original space, noting all the tiles along the way.
-              while True:
-                  x -= xdirection
-                  y -= ydirection
-                  if x == xstart and y == ystart:
-                      break
-                  tilesToFlip.append([x, y])
+    board[xstart][ystart] = ' '  # restore the empty space
 
+    if len(tilesToFlip) == 0:  # If no tiles were flipped, this is not a valid move.
 
+        return False
 
-  board[xstart][ystart] = ' ' # restore the empty space
+    return tilesToFlip
 
-  if len(tilesToFlip) == 0: # If no tiles were flipped, this is not a valid move.
-
-      return False
-
-  return tilesToFlip
 
 def getValidMoves(board, tile):
+    # Returns a list of [x,y] lists of valid moves for the given player on the given board.
+    validMoves = []
+    for x in range(8):
+        for y in range(8):
+            if isValidMove(board, tile, x, y) != False:
+                validMoves.append([x, y])
+    return validMoves
 
- # Returns a list of [x,y] lists of valid moves for the given player on the given board.
-  validMoves = []
-  for x in range(8):
-    for y in range(8):
-      if isValidMove(board, tile, x, y) != False:
-        validMoves.append([x, y])
-  return validMoves
 
 def getBoardWithValidMoves(board, tile):
-  # Returns a new board with . marking the valid moves the given player can make.
-  dupeBoard = []
-  for i in range(8):
-    dupeBoard.append([' '] * 8)
-  for x in range(8):
-    for y in range(8):
-      dupeBoard[x][y] = board[x][y]
-  for x, y in getValidMoves(dupeBoard, tile):
-      dupeBoard[x][y] = '.'
-  return dupeBoard
+    # Returns a new board with . marking the valid moves the given player can make.
+    dupeBoard = []
+    for i in range(8):
+        dupeBoard.append([' '] * 8)
+    for x in range(8):
+        for y in range(8):
+            dupeBoard[x][y] = board[x][y]
+    for x, y in getValidMoves(dupeBoard, tile):
+        dupeBoard[x][y] = '.'
+    return dupeBoard
