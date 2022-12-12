@@ -9,11 +9,8 @@ import dynamodb as ddb
 import boto3
 import hashlib
 from . import front, config
-from flask import render_template, request, escape, jsonify, session, redirect
-
-global db
+from flask import render_template, request, jsonify, session, redirect
 global game_entry
-global dbclient
 
 
 @front.before_first_request
@@ -26,9 +23,7 @@ def init():
     Returns:
       n/a
     """
-    global db
     global game_entry
-    global dbclient
     dbclient = boto3.client('dynamodb',
                             region_name=config.aws_key['aws_region'],
                             aws_access_key_id=config.aws_key['aws_access_key_id'],
