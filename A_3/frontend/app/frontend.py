@@ -5,7 +5,7 @@
  * Author: Weixuan Yang
  * Date: Oct. 11, 2022
 """
-import dynamodb
+import dynamodb as ddb
 import boto3
 import hashlib
 from . import front, config
@@ -38,7 +38,7 @@ def init():
                         aws_access_key_id=config.aws_key['aws_access_key_id'],
                         aws_secret_access_key=config.aws_key['aws_secret_access_key'])
     if 'Games' not in dbclient.list_tables()['TableNames']:
-        dynamodb.createGamesTable()
+        ddb.createGamesTable()
     game_entry = db.Table('Games')
 
 
@@ -78,7 +78,7 @@ def get_join():
     Returns:
       str: the arguments for the Jinja template
     """
-    all_hosts = dynamodb.getGameInvites('None', game_entry)['GameId']
+    all_hosts = ddb.getGameInvites('None', game_entry)['GameId']
     front.logger.debug('\n* Current pending games: ' + str(all_hosts))
     return render_template('join.html', hosts=all_hosts)
 
@@ -141,7 +141,7 @@ def create_game():
     # layer_side = request.form['player_side']  # do not support choosing side
     front.logger.debug('\n* Creating a game with name: ' + str(session['player_name']))
     game_id = str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
-    response = dynamodb.createNewGame(game_id, str(session['player_name']), 'None', game_entry)
+    response = ddb.createNewGame(game_id, str(session['player_name']), 'None', game_entry)
     front.logger.debug(str(response))
     return redirect('/game/' + str(game_id))
 
@@ -163,11 +163,11 @@ def join_game():
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
     game_id = request.form['game_id']
     front.logger.debug('\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
-    response = dynamodb.getGame(game_id, game_entry)
+    response = ddb.getGame(game_id, game_entry)
     front.logger.debug(str(response))
     if not response:
         return render_template('result', title='Fail to Join the Game', message='The game you want to join does not exist, please try again.')
-    response = dynamodb.acceptGameInvite(response, game_entry, str(session["player_name"]))
+    response = ddb.acceptGameInvite(response, game_entry, str(session["player_name"]))
     front.logger.debug(str(response))
     return redirect('/game/' + str(game_id))
 
@@ -186,11 +186,11 @@ def game(game_id):
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     disks = []  # get the disks from dynamoDB
-    response = dynamodb.getGame(game_id, game_entry)
+    response = ddb.getGame(game_id, game_entry)
     front.logger.debug(str(response))
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    game_data = dynamodb.makeBoard(response, game_entry)
+    game_data = ddb.makeBoard(response, game_entry)
     board = board_render(game_id, player_name, disks)
     if len(board) != 64:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
@@ -218,7 +218,7 @@ def move(game_id, loc):
       str: the arguments for the Jinja template
     """
     player_name = session['player_name']
-    #need loc and tiles to flip
+    # need loc and tiles to flip
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     if False:  # check if the move can be made
@@ -242,13 +242,13 @@ def surrender(game_id):
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     ended = True  # mark the game as ended on dynamoDB
-    game_data = dynamodb.getGame(game_id, game_entry)
+    game_data = ddb.getGame(game_id, game_entry)
     front.logger.debug(str(game_data))
     if player_name == game_data['HostId']:
         winner = game_data['OpponentId']
     else:
         winner = game_data['HostId']
-    dynamodb.finishGame(game_data, game_entry, winner)
+    ddb.finishGame(game_data, game_entry, winner)
     front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
     return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
 
@@ -266,11 +266,15 @@ def refresh(game_id):
     player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    game_data = dynamodb.getGame(game_id, game_entry)
+    game_data = ddb.getGame(game_id, game_entry)
     front.logger.debug(str(game_data))
     status = game_data["StatusDate"].split("_")[0]
     if status == 'FINISHED':
-        player_score = board_count(game_id, player_name, dynamodb.makeBoard(game_data, game_entry))
+        if game_data['HostId'] == player_name:
+            player_side = 'O'
+        else:
+            player_side = 'X'
+        player_score = ddb.count_disks(game_data, player_side)
         front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score))
         winner = game_data['Winner']
         if player_name == winner:
@@ -311,20 +315,6 @@ def board_render(game_id, player_name, disks):
             else:
                 board.append(' ')
     return board
-
-def board_count(game_id, player_name, disks):
-    """Count the number of the disks on board
-
-    Args:
-      game_id (str): the identity of the game
-      player_name (str): the name of current player
-      disks (list): the list of disks on the game board
-
-    Returns:
-      int: the number of the disks with designated color
-    """
-    count = 0
-    return count
 
 
 def isOnBoard(x, y):

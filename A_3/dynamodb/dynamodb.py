@@ -1,16 +1,14 @@
 import boto3
+from frontend.app import config
 from boto3.dynamodb.conditions import Key
-from datetime               import datetime
-awsKey={
-            'aws_access_key_id' : 'AKIA3NQ4GILKONINMWGT',
-            'aws_secret_access_key' : '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'
-        }
+from datetime import datetime
+
 
 def createGamesTable():
     db = boto3.resource('dynamodb',
-                          region_name='us-east-1',
-                          aws_access_key_id=awsKey['aws_access_key_id'],
-                          aws_secret_access_key=awsKey['aws_secret_access_key'])
+                        region_name=config.aws_key['aws_region'],
+                        aws_access_key_id=config.aws_key['aws_access_key_id'],
+                        aws_secret_access_key=config.aws_key['aws_secret_access_key'])
 
     gamesTable = db.create_table(TableName="Games",
                 KeySchema=[
@@ -307,23 +305,33 @@ def finishGame(item, gamesTable, winnerId):
     return newItem['Attributes']
 
 def checkResult(item, gamesTable):
-    boxes=['00','01','02','03','04','05','06','07','10','11','12','13','14','15','16','17','20','21','22','23','24','25','26','27','30','31','32','33','34','35','36','37','40','41','42','43','44','45','46','47',
-        '50','51','52','53','54','55','56','57','60','61','62','63','64','65','66','67','70','71','72','73','74','75','76','77']
-    countO=0
-    countX=0
-    for b in boxes:
-        if item[b]==' ':
-            return 'unfinished'
-        elif item[b]=='O':
-            countO+=1
-        elif item[b]=='X':
-            countX+=1
-    if countO>countX:
+    boxes = ['00', '01', '02', '03', '04', '05', '06', '07', '10', '11', '12', '13', '14', '15', '16', '17', '20', '21',
+             '22', '23', '24', '25', '26', '27', '30', '31', '32', '33', '34', '35', '36', '37', '40', '41', '42', '43',
+             '44', '45', '46', '47',
+             '50', '51', '52', '53', '54', '55', '56', '57', '60', '61', '62', '63', '64', '65', '66', '67', '70', '71',
+             '72', '73', '74', '75', '76', '77']
+    count_o = count_disks(item, 'O')
+    count_x = count_disks(item, 'X')
+    if count_o > count_x:
         return item['HostId']
-    if countO<countX:
+    elif count_o < count_x:
         return item['OpponentId']
-    if countO==countX:
+    else:
         return 'draw'
+
+
+def count_disks(item, color):
+    boxes = ['00', '01', '02', '03', '04', '05', '06', '07', '10', '11', '12', '13', '14', '15', '16', '17', '20', '21',
+             '22', '23', '24', '25', '26', '27', '30', '31', '32', '33', '34', '35', '36', '37', '40', '41', '42', '43',
+             '44', '45', '46', '47',
+             '50', '51', '52', '53', '54', '55', '56', '57', '60', '61', '62', '63', '64', '65', '66', '67', '70', '71',
+             '72', '73', '74', '75', '76', '77']
+    count = 0
+    for b in boxes:
+        if item[b] == color:
+            count += 1
+    return count
+
     
 def makeBoard(item, gamesTable):
     boxes=['00','01','02','03','04','05','06','07','10','11','12','13','14','15','16','17','20','21','22','23','24','25','26','27','30','31','32','33','34','35','36','37','40','41','42','43','44','45','46','47',
