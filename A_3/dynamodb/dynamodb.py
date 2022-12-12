@@ -7,6 +7,13 @@ def get(game_id, games_table):
     return games_table.get_item(Key={'GameId': game_id})
 
 
+def teardown(game_id, games_table):
+    games_table.delete_item(
+        Key={'GameId': game_id}
+    )
+    return 'Successfully delete entry ' + str(game_id)
+
+
 def create_game_table():
     db = boto3.resource('dynamodb',
                         region_name=config.aws_key['aws_region'],
