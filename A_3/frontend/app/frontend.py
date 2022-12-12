@@ -8,7 +8,8 @@
 import boto3
 import hashlib
 from . import front, config
-from dynamodb import dynamodb as ddb
+from . import dynamodb as ddb
+# from dynamodb import dynamodb as ddb
 from flask import render_template, request, g, jsonify, session, redirect
 
 
@@ -30,7 +31,7 @@ def get_db():
                                   aws_secret_access_key=config.aws_key['aws_secret_access_key'])
         if 'Games' not in dynamodb_client.list_tables()['TableNames']:
             ddb.create_game_table()
-        g.db = dynamodb.Table('Games')
+        g.game_table = dynamodb.Table('Games')
     return g.game_table
 
 
@@ -185,12 +186,13 @@ def game(game_id):
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     game_data = ddb.make_board(response)
-    if len(board) != 64:
-        return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    foe_name = game_data['FoeId']
-    front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
+    
+    foe_name = response['FoeId']
+    # front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
     if not foe_name or foe_name == 'None':
         board = board_render(game_id, player_name, game_data)
+        if len(board) != 64:
+            return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
         message = 'Waiting for another player to join...'
     else:
         if game_data['Turn'] == str(player_name):
@@ -199,9 +201,13 @@ def game(game_id):
                 tile='O'
             disks=getBoardWithValidMoves(game_data, tile)
             board = board_render(game_id, player_name, disks)
+            if len(board) != 64:
+                return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
             message = 'Now it is your turn!'
         else:
             board = board_render(game_id, player_name, game_data)
+            if len(board) != 64:
+                return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
     return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
@@ -244,7 +250,7 @@ def move(game_id, loc):
     return redirect('/game/' + str(game_id))
 
 
-@front.route('/game/<game_id>/surrender')
+@front.route('/game/<game_id>/surrender', methods=['POST'])
 def surrender(game_id):
     """A player surrender
 

@@ -8,7 +8,9 @@
 import boto3
 from flask import Flask
 from . import config
+from uuid import uuid4
 front = Flask(__name__)
+front.secret_key = str(uuid4())
 s3 = boto3.client('s3',
                   region_name=config.aws_key['aws_region'],
                   aws_access_key_id=config.aws_key['aws_access_key_id'],
