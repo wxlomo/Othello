@@ -215,9 +215,25 @@ def move(game_id, loc):
     # need loc and tiles to flip
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    if False:  # check if the move can be made
+    response = ddb.get(game_id, get_db())
+    front.logger.debug(str(response))
+    if not response:
+        return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+    game_data = ddb.make_board(response)
+    xstart=loc[0]
+    ystart=loc[1]
+    tile='X'
+    if response['OUser']==player_name:
+        tile='O'
+    valid=isValidMove(game_data, tile, int(xstart), int(ystart))
+    if valid==False:  # check if the move can be made
         return render_template('result', title='403 Forbidden', message='This move cannot be performed.')
     # update the database with loc
+    position=[]
+    position.append(str(xstart)+str(ystart))
+    for p in valid:
+        position.append(str(p[0])+str(p[1]))
+    ddb.update_turn(response, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id))
 
