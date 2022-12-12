@@ -220,13 +220,20 @@ def getGame(gameId,gamesTable):
     return item
 
 def acceptGameInvite(item, gamesTable, userId):
-    games=getGamesWithStatus(userId, "PENDING",gamesTable)
-    if games:
-        return "Exist pending game id:" + games[0]['GameId']
-    games=getGamesWithStatus(userId, "INPROGRESS",gamesTable)
-    if games:
-        return "Exist playing game id:" + games[0]['GameId']
+    
     gameId     = item["GameId"]
+    games=getGamesWithStatus(userId, "PENDING",gamesTable)
+    if games and games[0]['GameId'] != gameId:
+        
+        return "Exist pending game id:" + games[0]['GameId']+ " please join with this id"
+    if games[0]['GameId'] == gameId:
+        return item
+    games=getGamesWithStatus(userId, "INPROGRESS",gamesTable)
+    if games and games[0]['GameId'] != gameId:
+        
+        return "Exist playing game id:" + games[0]['GameId']+ " please join with this id"
+    if games[0]['GameId'] == gameId:
+        return item
     statusDate = item["StatusDate"]
     status=statusDate.split("_")[0]
     if status != 'PENDING':
