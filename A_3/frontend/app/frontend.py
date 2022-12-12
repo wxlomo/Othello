@@ -6,10 +6,31 @@
  * Date: Oct. 11, 2022
 """
 import dynamodb
+import boto3
+from uuid                           import uuid4
 from . import front, config
 from flask import render_template, request, escape, jsonify, session, redirect
+awsKey=config.awsKey
 
 
+@front.before_first_request
+# create games table if not exist
+def initTable():
+  global dbclient
+  global db
+  global gamesTable
+  dbclient = boto3.client('dynamodb',
+                        region_name='us-east-1',
+                        aws_access_key_id=awsKey['aws_access_key_id'],
+                        aws_secret_access_key=awsKey['aws_secret_access_key'])
+  db = boto3.resource('dynamodb',
+                        region_name='us-east-1',
+                        aws_access_key_id=awsKey['aws_access_key_id'],
+                        aws_secret_access_key=awsKey['aws_secret_access_key'])
+
+  if 'Games' not in dbclient.list_tables()['TableNames']:
+      dynamodb.createGamesTable()
+  gamesTable=db.Table('Games')
 @front.route('/')
 def get_home():
     """Home page render.
@@ -46,7 +67,10 @@ def get_join():
     Returns:
       str: the arguments for the Jinja template
     """
+    last10pending=dynamodb.getGameInvites('None', gamesTable)
     all_hosts = []  # the function to retrieve all available hosts
+    for item in last10pending:
+      all_hosts.append(item['GameId'])
     return render_template('join.html', hosts=all_hosts)
 
 
@@ -100,10 +124,15 @@ def create_game():
     Returns:
       str: the arguments for the Jinja template
     """
-    session['player_name'] = request.form['player_name']
-    player_side = request.form['player_side']
+    formInput = request.form['player_name']
+    if formInput and formInput.strip() and formInput != 'None' and formInput.strip() != 'None':
+      session['player_name'] = formInput.strip()
+    else:
+      return 'invalid name'
+    # layer_side = request.form['player_side']  #dont support chosing side
     front.logger.debug('\n* Creating a game with name: ' + str(session['player_name']))
-    game_id = escape(session['player_name'])  # the function to create a game to dynamoDB
+    game_id = str(uuid4()) #escape(session['player_name'])  # the function to create a game to dynamoDB #random gameid each time
+    item=dynamodb.createNewGame(game_id, str(session['player_name']), 'None', gamesTable)
     return redirect('/game/' + str(game_id))
 
 
@@ -117,9 +146,15 @@ def join_game():
     Returns:
       str: the arguments for the Jinja template
     """
-    session['player_name'] = request.form['player_name']
+    formInput = request.form['player_name']
+    if formInput and formInput.strip() and formInput != 'None' and formInput.strip() != 'None':
+      session['player_name'] = formInput.strip()
+    else:
+      return 'invalid name'
     game_id = request.form['game_id']
     front.logger.debug('\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
+    item=dynamodb.getGame(game_id,gamesTable)
+    game=dynamodb.acceptGameInvite(item,gamesTable,str(session["player_name"]))
     if True:  # Check if game id exist
         return redirect('/game/' + str(game_id))
     else:
