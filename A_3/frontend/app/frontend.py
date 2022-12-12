@@ -177,6 +177,7 @@ def game(game_id):
     Returns:
       str: the arguments for the Jinja template
     """
+    
     player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
@@ -185,6 +186,9 @@ def game(game_id):
     front.logger.debug(str(response))
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+    status = response["Status"]
+    if status == 'Finished':
+        return refresh(game_id)
     game_data = ddb.make_board(response)
     tile='X'
     othertile='O'
