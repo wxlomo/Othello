@@ -185,6 +185,10 @@ def game(game_id):
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     game_data = ddb.make_board(response)
+    tile='X'
+    if response['OUser']==player_name:
+        tile='O'
+    disks=getBoardWithValidMoves(game_data, tile)
     board = board_render(game_id, player_name, disks)
     if len(board) != 64:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
@@ -279,7 +283,7 @@ def refresh(game_id):
     front.logger.debug(str(game_data))
     status = game_data["Status"]
     if status == 'Finished':
-        if game_data['HostId'] == player_name:
+        if game_data['OUser'] == player_name:
             player_side = 'O'
         else:
             player_side = 'X'
@@ -317,7 +321,7 @@ def board_render(game_id, player_name, disks):
     index = [[outer * 10 + inner for inner in range(8)] for outer in range(8)]
     for i in range(len(index[0])):
         index[0][i]='0'+str(i)
-    grid = []  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
+    grid = disks  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
     board = []
     for row in range(len(index)):
         for lattice in range(len(index[row])):
@@ -326,7 +330,7 @@ def board_render(game_id, player_name, disks):
                 board.append('<img src="src/img/dark.svg">')
             elif current_disk == 'O':
                 board.append('<img src="src/img/light.svg">')
-            elif current_disk == 'placeable':
+            elif current_disk == '.':
                 board.append(
                     '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(
                         game_id) + '/move/' + str(index[row][lattice]) + '">')
