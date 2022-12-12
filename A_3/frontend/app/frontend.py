@@ -125,12 +125,13 @@ def create_game():
       str: the arguments for the Jinja template
     """
     formInput = request.form['player_name']
-    if formInput and formInput.strip() and formInput != 'None' and formInput.strip() != 'None':
+    if formInput and formInput.strip() and formInput.strip() != 'None' and formInput.strip() != 'draw':
       session['player_name'] = formInput.strip()
     else:
       return 'invalid name'
     # layer_side = request.form['player_side']  #dont support chosing side
     front.logger.debug('\n* Creating a game with name: ' + str(session['player_name']))
+    
     game_id = str(uuid4()) #escape(session['player_name'])  # the function to create a game to dynamoDB #random gameid each time
     item=dynamodb.createNewGame(game_id, str(session['player_name']), 'None', gamesTable)
     return redirect('/game/' + str(game_id))
@@ -147,14 +148,16 @@ def join_game():
       str: the arguments for the Jinja template
     """
     formInput = request.form['player_name']
-    if formInput and formInput.strip() and formInput != 'None' and formInput.strip() != 'None':
+    if formInput and formInput.strip() and formInput.strip() != 'None' and formInput.strip() != 'draw' :
       session['player_name'] = formInput.strip()
     else:
       return 'invalid name'
     game_id = request.form['game_id']
     front.logger.debug('\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
+    
     item=dynamodb.getGame(game_id,gamesTable)
     game=dynamodb.acceptGameInvite(item,gamesTable,str(session["player_name"]))
+    
     if True:  # Check if game id exist
         return redirect('/game/' + str(game_id))
     else:
@@ -175,15 +178,22 @@ def game(game_id):
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     disks = []  # get the disks from dynamoDB
+    
+    item=dynamodb.getGame(game_id,gamesTable)
+    twodboard=dynamodb.makeBoard(item, gamesTable)
+    
     board = board_render(game_id, player_name, disks)
     if len(board) != 64:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    foe_name = ''  # get the name of another player
+      
+    foe_name = item['OpponentId']  # get the name of another player
+    
     front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
-    if not foe_name:  # check if another player joined
+    
+    if not foe_name or foe_name=='None':  # check if another player joined
         message = 'Waiting for another player to join...'
     else:
-        if True:  # check if it is current player's turn
+        if item['Turn']==str(player_name):  # check if it is current player's turn
             message = 'Now it is your turn!'
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
@@ -202,6 +212,10 @@ def move(game_id, loc):
       str: the arguments for the Jinja template
     """
     player_name = session['player_name']
+    
+    #need loc and tiles to flip
+    
+    
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     if False:  # check if the move can be made
@@ -225,6 +239,13 @@ def surrender(game_id):
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     ended = True  # mark the game as ended on dynamoDB
+    
+    item=dynamodb.getGame(game_id,gamesTable)
+    winnerId=item['HostId']
+    if player_name==winnerId:
+      winnerId=item['OpponentId']
+    dynamodb.finishGame(item, gamesTable, winnerId)
+    
     player_score = 0  # mark the current player's score as 0
     front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
     return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
@@ -243,18 +264,27 @@ def refresh(game_id):
     player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    ended = ""  # check if the game ends
+      
+    item=dynamodb.getGame(game_id,gamesTable)
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    ended = False  # check if the game ends
+    if status == 'FINISHED':
+      ended=True
+    
     if ended:
-        player_score = 0  # get the player's final score
-        foe_score = 0  # get the other player's final score
-        front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score) + ', their foe has score ' + str(foe_score))
-        if player_score > foe_score:
+        # player_score = 0  # get the player's final score
+        # foe_score = 0  # get the other player's final score
+        # front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score) + ', their foe has score ' + str(foe_score))
+        winner=item['Winner']
+        if player_name == winner:
             # upload the final score to the ranking
-            return render_template('result', title='You Win :)', message='Your final score is ' + str(player_score) + '.')
-        elif player_score < foe_score:
-            return render_template('result', title='You Lose :(', message='Your final score is ' + str(player_score) + '.')
+            return render_template('result', title='You Win :)', message='Congratulations.') 
+            # Your final score is ' + str(player_score) +
+        elif winner!= 'draw':  #player_score < foe_score
+            return render_template('result', title='You Lose :(', message='Try next time.')
         else:
-            return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
+            return render_template('result', title='Draw...', message='Try nest time.')
     else:
         return redirect('/game/' + str(game_id))
 
