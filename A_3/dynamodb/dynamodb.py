@@ -87,6 +87,12 @@ def createGamesTable():
     return gamesTable
 
 def createNewGame(gameId, creator, invitee, gamesTable):
+    games=getGamesWithStatus(creator, "PENDING",gamesTable)
+    if games:
+        return "Exist pending game id:" + games[0]['gameId']
+    games=getGamesWithStatus(creator, "INPROGRESS",gamesTable)
+    if games:
+        return "Exist playing game id:" + games[0]['gameId']
     now = str(datetime.now())
     statusDate = "PENDING_"+now
     item={
@@ -212,8 +218,13 @@ def getGame(gameId,gamesTable):
     item=gamesTable.get_item(Key={'GameId':gameId})
     return item
 
-def acceptGameInvite(item, gamesTable):
-
+def acceptGameInvite(item, gamesTable, userId):
+    games=getGamesWithStatus(userId, "PENDING",gamesTable)
+    if games:
+        return "Exist pending game id:" + games[0]['gameId']
+    games=getGamesWithStatus(userId, "INPROGRESS",gamesTable)
+    if games:
+        return "Exist playing game id:" + games[0]['gameId']
     gameId     = item["GameId"]
     statusDate = item["StatusDate"]
     status=statusDate.split("_")[0]
@@ -225,9 +236,9 @@ def acceptGameInvite(item, gamesTable):
 
     newItem=gamesTable.update_item(
             Key={'GameId':gameId},
-            UpdateExpression="set StatusDate = :r",
+            UpdateExpression="set StatusDate = :r, OpponentId = :u, Turn = :t",
             ExpressionAttributeValues={
-                ':r': statusDate},
+                ':r': statusDate, ':u':userId, ':t':userId},
             ReturnValues="ALL_NEW"
         )
 
