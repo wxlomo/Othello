@@ -313,7 +313,10 @@ def board_render(game_id, player_name, disks):
     Returns:
       list: the updated lattices list to update the page
     """
-    index = [[outer * 10 + inner for inner in range(9)] for outer in range(9)]
+    #There is 9 place in one row, is this what u want???????????
+    index = [[outer * 10 + inner for inner in range(8)] for outer in range(8)]
+    for i in range(len(index[0])):
+        index[0][i]='0'+str(i)
     grid = []  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
     board = []
     for row in range(len(index)):
