@@ -89,10 +89,11 @@ def createGamesTable():
 def createNewGame(gameId, creator, invitee, gamesTable):
     games=getGamesWithStatus(creator, "PENDING",gamesTable)
     if games:
-        return "Exist pending game id:" + games[0]['gameId']
+        
+        return "Exist pending game id:" + games[0]['GameId']
     games=getGamesWithStatus(creator, "INPROGRESS",gamesTable)
     if games:
-        return "Exist playing game id:" + games[0]['gameId']
+        return "Exist playing game id:" + games[0]['GameId']
     now = str(datetime.now())
     statusDate = "PENDING_"+now
     item={
@@ -221,10 +222,10 @@ def getGame(gameId,gamesTable):
 def acceptGameInvite(item, gamesTable, userId):
     games=getGamesWithStatus(userId, "PENDING",gamesTable)
     if games:
-        return "Exist pending game id:" + games[0]['gameId']
+        return "Exist pending game id:" + games[0]['GameId']
     games=getGamesWithStatus(userId, "INPROGRESS",gamesTable)
     if games:
-        return "Exist playing game id:" + games[0]['gameId']
+        return "Exist playing game id:" + games[0]['GameId']
     gameId     = item["GameId"]
     statusDate = item["StatusDate"]
     status=statusDate.split("_")[0]
@@ -233,7 +234,7 @@ def acceptGameInvite(item, gamesTable, userId):
     date = str(datetime.now())
     status = "INPROGRESS_"
     statusDate = status+date
-
+    userId=str(userId)
     newItem=gamesTable.update_item(
             Key={'GameId':gameId},
             UpdateExpression="set StatusDate = :r, OpponentId = :u, Turn = :t",
