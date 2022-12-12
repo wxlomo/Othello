@@ -185,21 +185,23 @@ def game(game_id):
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     game_data = ddb.make_board(response)
-    tile='X'
-    if response['OUser']==player_name:
-        tile='O'
-    disks=getBoardWithValidMoves(game_data, tile)
-    board = board_render(game_id, player_name, disks)
     if len(board) != 64:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     foe_name = game_data['FoeId']
     front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
     if not foe_name or foe_name == 'None':
+        board = board_render(game_id, player_name, game_data)
         message = 'Waiting for another player to join...'
     else:
         if game_data['Turn'] == str(player_name):
+            tile='X'
+            if response['OUser']==player_name:
+                tile='O'
+            disks=getBoardWithValidMoves(game_data, tile)
+            board = board_render(game_id, player_name, disks)
             message = 'Now it is your turn!'
         else:
+            board = board_render(game_id, player_name, game_data)
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
     return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
