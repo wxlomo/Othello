@@ -19,6 +19,7 @@ def createGamesTable():
                 AttributeDefinitions=[
                 {'AttributeName': 'GameId', 'AttributeType': 'S'},
                 {'AttributeName': 'OpponentId', 'AttributeType': 'S'},
+                {'AttributeName': 'HostId', 'AttributeType': 'S'},
                 {'AttributeName': 'StatusDate', 'AttributeType': 'S'}
                 ],
                 ProvisionedThroughput={
@@ -34,11 +35,39 @@ def createGamesTable():
                                 'KeyType': 'HASH',
 
                             },
+                            
                             {
                                 'AttributeName': 'StatusDate',
                                 'KeyType': 'RANGE',
 
                             }
+                            
+                            
+                        ],
+                        'Projection': {
+                            'ProjectionType': 'ALL',
+                            
+                        },
+                        'ProvisionedThroughput': {
+                            'ReadCapacityUnits': 1,
+                            'WriteCapacityUnits': 1
+                        }
+                    },
+                    {
+                        'IndexName': 'HostId',
+                        'KeySchema': [
+                            {
+                                'AttributeName': 'HostId',
+                                'KeyType': 'HASH',
+
+                            },
+                            
+                            {
+                                'AttributeName': 'StatusDate',
+                                'KeyType': 'RANGE',
+
+                            }
+                            
                             
                         ],
                         'Projection': {
@@ -59,7 +88,7 @@ def createGamesTable():
 
 def createNewGame(gameId, creator, invitee, gamesTable):
     now = str(datetime.now())
-    statusDate = "PENDING"
+    statusDate = "PENDING_"+now
     item={
             "GameId"     : gameId,
             "HostId"     : creator,
@@ -69,6 +98,15 @@ def createNewGame(gameId, creator, invitee, gamesTable):
             "OpponentId" : invitee,
             "Times"       : now,
             "Winner"     : 'unfinished',
+            '00'           : ' ',
+            '01'           : ' ',
+            '02'           : ' ',
+            '03'           : ' ',
+            '04'           : ' ',
+            '05'           : ' ',
+            '06'           : ' ',
+            '07'           : ' ',
+            '10'           : ' ',
             '11'           : ' ',
             '12'           : ' ',
             '13'           : ' ',
@@ -76,7 +114,7 @@ def createNewGame(gameId, creator, invitee, gamesTable):
             '15'           : ' ',
             '16'           : ' ',
             '17'           : ' ',
-            '18'           : ' ',
+            '20'           : ' ',
             '21'           : ' ',
             '22'           : ' ',
             '23'           : ' ',
@@ -84,31 +122,31 @@ def createNewGame(gameId, creator, invitee, gamesTable):
             '25'           : ' ',
             '26'           : ' ',
             '27'           : ' ',
-            '28'           : ' ',
+            '30'           : ' ',
             '31'           : ' ',
             '32'           : ' ',
-            '33'           : ' ',
-            '34'           : ' ',
+            '33'           : 'X',
+            '34'           : 'O',
             '35'           : ' ',
             '36'           : ' ',
             '37'           : ' ',
-            '38'           : ' ',
+            '40'           : ' ',
             '41'           : ' ',
             '42'           : ' ',
-            '43'           : ' ',
-            '44'           : 'O',
-            '45'           : 'X',
+            '43'           : 'O',
+            '44'           : 'X',
+            '45'           : ' ',
             '46'           : ' ',
             '47'           : ' ',
-            '48'           : ' ',
+            '50'           : ' ',
             '51'           : ' ',
             '52'           : ' ',
             '53'           : ' ',
-            '54'           : 'X',
-            '55'           : 'O',
+            '54'           : ' ',
+            '55'           : ' ',
             '56'           : ' ',
             '57'           : ' ',
-            '58'           : ' ',
+            '60'           : ' ',
             '61'           : ' ',
             '62'           : ' ',
             '63'           : ' ',
@@ -116,23 +154,14 @@ def createNewGame(gameId, creator, invitee, gamesTable):
             '65'           : ' ',
             '66'           : ' ',
             '67'           : ' ',
-            '68'           : ' ',
+            '70'           : ' ',
             '71'           : ' ',
             '72'           : ' ',
             '73'           : ' ',
             '74'           : ' ',
             '75'           : ' ',
             '76'           : ' ',
-            '77'           : ' ',
-            '78'           : ' ',
-            '81'           : ' ',
-            '82'           : ' ',
-            '83'           : ' ',
-            '84'           : ' ',
-            '85'           : ' ',
-            '86'           : ' ',
-            '87'           : ' ',
-            '88'           : ' '
+            '77'           : ' '
         }
     gamesTable.put_item(
         Item=item    
@@ -144,9 +173,12 @@ def updateBoardAndTurn(item, position, current_player, gamesTable):
     player_one = item["HostId"]
     player_two = item["OpponentId"]
     gameId     = item["GameId"]
-    # statusDate = item["StatusDate"]
-    # date = statusDate.split("_")[1]
-
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'INPROGRESS':
+        return False
+    if current_player!=item["Turn"]:
+        return False
     representation = "X"
     if item["OUser"] == current_player:
         representation = "O"
@@ -174,7 +206,7 @@ def updateBoardAndTurn(item, position, current_player, gamesTable):
                 ':r': next_player},
             ReturnValues="ALL_NEW"
         )
-    return newItem['Attributes']
+    return True
 
 def getGame(gameId,gamesTable):
     item=gamesTable.get_item(Key={'GameId':gameId})
@@ -183,9 +215,13 @@ def getGame(gameId,gamesTable):
 def acceptGameInvite(item, gamesTable):
 
     gameId     = item["GameId"]
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'PENDING':
+        return 'Not a valid game'
     date = str(datetime.now())
-    status = "INPROGRESS"
-    statusDate = status
+    status = "INPROGRESS_"
+    statusDate = status+date
 
     newItem=gamesTable.update_item(
             Key={'GameId':gameId},
@@ -198,6 +234,10 @@ def acceptGameInvite(item, gamesTable):
     return newItem['Attributes']
 
 def rejectGameInvite(item, gamesTable):
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'PENDING':
+        return 'Not a valid game'
     gameId     = item["GameId"]
     gamesTable.delete_item(
             Key={'GameId':gameId}
@@ -218,17 +258,25 @@ def getGameInvites(user, gamesTable):
                                         KeyConditionExpression=Key('OpponentId').eq(str(user)) & Key('StatusDate').begins_with("PENDING")
                                         # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
                                         )
-
-    invites=gameInvites['Items']
+    
+    gameInvites=gameInvites['Items']
+    n=min(10,len(gameInvites))
+    for i in range (n-1,-1,-1):
+        invites.append(gameInvites[i])
+    
     
     return invites
 
 def finishGame(item, gamesTable, winnerId):
     # winnerID: str of winner's id or 'draw'
+    statusDate = item["StatusDate"]
+    status=statusDate.split("_")[0]
+    if status != 'INPROGRESS':
+        return 'Not a valid game'
     gameId     = item["GameId"]
     date = str(datetime.now())
-    status = "FINISHED"
-    statusDate = status
+    status = "FINISHED_"
+    statusDate = status+date
 
     newItem=gamesTable.update_item(
             Key={'GameId':gameId},
@@ -240,8 +288,8 @@ def finishGame(item, gamesTable, winnerId):
     return newItem['Attributes']
 
 def checkResult(item, gamesTable):
-    boxes=['11','12','13','14','15','16','17','18','21','22','23','24','25','26','27','28','31','32','33','34','35','36','37','38','41','42','43','44','45','46','47',
-        '48','51','52','53','54','55','56','57','58','61','62','63','64','65','66','67','68','71','72','73','74','75','76','77','78','81','82','83','84','85','86','87','88']
+    boxes=['00','01','02','03','04','05','06','07','10','11','12','13','14','15','16','17','20','21','22','23','24','25','26','27','30','31','32','33','34','35','36','37','40','41','42','43','44','45','46','47',
+        '50','51','52','53','54','55','56','57','60','61','62','63','64','65','66','67','70','71','72','73','74','75','76','77']
     countO=0
     countX=0
     for b in boxes:
@@ -259,13 +307,83 @@ def checkResult(item, gamesTable):
         return 'draw'
     
 def makeBoard(item, gamesTable):
-    boxes=['11','12','13','14','15','16','17','18','21','22','23','24','25','26','27','28','31','32','33','34','35','36','37','38','41','42','43','44','45','46','47',
-        '48','51','52','53','54','55','56','57','58','61','62','63','64','65','66','67','68','71','72','73','74','75','76','77','78','81','82','83','84','85','86','87','88']
+    boxes=['00','01','02','03','04','05','06','07','10','11','12','13','14','15','16','17','20','21','22','23','24','25','26','27','30','31','32','33','34','35','36','37','40','41','42','43','44','45','46','47',
+        '50','51','52','53','54','55','56','57','60','61','62','63','64','65','66','67','70','71','72','73','74','75','76','77']
     board = []
 
     for i in range(8):
 
         board.append([' '] * 8)
     for b in boxes:
-        board[int(b[0])-1][int(b[1])-1]=item[b]
+        board[int(b[0])][int(b[1])]=item[b]
     return board
+
+
+
+def mergeQueries(host, opp, limit=10):
+    """
+    Taking the two iterators of games you've played in (either host or opponent)
+    you sort through the elements taking the top 10 recent games into a list.
+    Returns a list of Game objects.
+    """
+    games = []
+    
+    i=len(host)-1
+    j=len(opp)-1
+    
+    while len(games) < limit and i>=0 and j >= 0:
+        game_one = host[i]
+        game_two = opp[j]
+        statusDate = game_one["StatusDate"]
+        date1=statusDate.split("_")[1]
+        date1=datetime.strptime(date1, '%Y-%m-%d %H:%M:%S.%f')
+        statusDate = game_two["StatusDate"]
+        date2=statusDate.split("_")[1]
+        date2=datetime.strptime(date2, '%Y-%m-%d %H:%M:%S.%f')
+
+        if date1> date2:
+            games.append(game_one)
+            i-=1
+        else:
+            games.append(game_two)
+            j-=1
+    if len(games) < limit:
+        if i>=0:
+            while len(games) < limit and i>=0:
+                game_one = host[i]
+                games.append(game_one)
+                i-=1
+        elif j>=0:
+            while len(games) < limit and j>=0:
+                game_two = opp[j]
+                games.append(game_two)
+                j-=1
+    return games
+
+def getGamesWithStatus(user, status,gamesTable):
+    """
+    Query for all games that a user appears in and have a certain status.
+    Sorts/merges the results of the two queries for top 10 most recent games.
+    Return a list of Game objects.
+    """
+
+    if user == None:
+        return []
+    hostGames = gamesTable.query(IndexName='HostId',
+                                        Select='ALL_ATTRIBUTES',
+                                        Limit=10,
+                                        # KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
+                                        KeyConditionExpression=Key('HostId').eq(str(user)) & Key('StatusDate').begins_with(status)
+                                        # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
+                                        )
+    opponentGames = gamesTable.query(IndexName='OpponentId',
+                                        Select='ALL_ATTRIBUTES',
+                                        Limit=10,
+                                        # KeyConditionExpression='OpponentId = :r AND StatusDate = :s',
+                                        KeyConditionExpression=Key('OpponentId').eq(str(user)) & Key('StatusDate').begins_with(status)
+                                        # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "PENDING"}
+                                        )
+
+    games = mergeQueries(hostGames['Items'],
+                            opponentGames['Items'])
+    return games
