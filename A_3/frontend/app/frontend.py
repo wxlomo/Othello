@@ -9,7 +9,6 @@ import boto3
 import hashlib
 from . import front, config
 from . import dynamodb as ddb
-# from dynamodb import dynamodb as ddb
 from flask import render_template, request, g, jsonify, session, redirect
 
 
@@ -180,34 +179,35 @@ def game(game_id):
     player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    disks = []  # get the disks from dynamoDB
     response = ddb.get(game_id, get_db())
     front.logger.debug(str(response))
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     game_data = ddb.make_board(response)
-    
     foe_name = response['FoeId']
-    # front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
     if not foe_name or foe_name == 'None':
         board = board_render(game_id, player_name, game_data)
         if len(board) != 64:
-            return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+            return render_template('result', title='500 Internal Server Error',
+                                   message='Failed to render the game board.')
+        front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
         message = 'Waiting for another player to join...'
     else:
         if game_data['Turn'] == str(player_name):
-            tile='X'
-            if response['OUser']==player_name:
-                tile='O'
-            disks=getBoardWithValidMoves(game_data, tile)
+            tile = 'X'
+            if response['OUser'] == player_name:
+                tile = 'O'
+            disks = getBoardWithValidMoves(game_data, tile)
             board = board_render(game_id, player_name, disks)
             if len(board) != 64:
-                return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+                return render_template('result', title='500 Internal Server Error',
+                                       message='Failed to render the game board.')
             message = 'Now it is your turn!'
         else:
             board = board_render(game_id, player_name, game_data)
             if len(board) != 64:
-                return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+                return render_template('result', title='500 Internal Server Error',
+                                       message='Failed to render the game board.')
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
     return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
@@ -224,27 +224,25 @@ def move(game_id, loc):
       str: the arguments for the Jinja template
     """
     player_name = session['player_name']
-    # need loc and tiles to flip
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     response = ddb.get(game_id, get_db())
     front.logger.debug(str(response))
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    game_data = ddb.make_board(response)
-    xstart=loc[0]
-    ystart=loc[1]
-    tile='X'
-    if response['OUser']==player_name:
-        tile='O'
-    valid=isValidMove(game_data, tile, int(xstart), int(ystart))
-    if valid==False:  # check if the move can be made
+    game_board = ddb.make_board(response)
+    x_start = loc[0]
+    y_start = loc[1]
+    if response['OUser'] == player_name:
+        tile = 'O'
+    else:
+        tile = 'X'
+    valid = valid_move(game_board, tile, int(x_start), int(y_start))
+    if not valid:
         return render_template('result', title='403 Forbidden', message='This move cannot be performed.')
-    # update the database with loc
-    position=[]
-    position.append(str(xstart)+str(ystart))
+    position = [str(x_start) + str(y_start)]
     for p in valid:
-        position.append(str(p[0])+str(p[1]))
+        position.append(str(p[0]) + str(p[1]))
     ddb.update_turn(response, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id))
@@ -325,10 +323,9 @@ def board_render(game_id, player_name, disks):
     Returns:
       list: the updated lattices list to update the page
     """
-    #There is 9 place in one row, is this what u want???????????
     index = [[outer * 10 + inner for inner in range(8)] for outer in range(8)]
     for i in range(len(index[0])):
-        index[0][i]='0'+str(i)
+        index[0][i] = '0' + str(i)
     grid = disks  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
     board = []
     for row in range(len(index)):
@@ -340,86 +337,76 @@ def board_render(game_id, player_name, disks):
                 board.append('<img src="src/img/light.svg">')
             elif current_disk == '.':
                 board.append(
-                    '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/' + str(
-                        game_id) + '/move/' + str(index[row][lattice]) + '">')
+                    '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/'
+                    + str(game_id) + '/move/' + str(index[row][lattice]) + '">')
             else:
                 board.append(' ')
     return board
 
 
-def isOnBoard(x, y):
-    # Returns True if the coordinates are located on the board.
-    return x >= 0 and x <= 7 and y >= 0 and y <= 7
+def valid_move(board, tile, x, y):
+    """Check if the move is valid and obtain the result
 
+    Args:
+      board (array): the 2-D array of the game board
+      tile (str): the side of the disk, 'X' if dark, 'O' if white
+      x (int): the x coordinate of the moved disk
+      y (int): the y coordinate of the moved disk
 
-def isValidMove(board, tile, xstart, ystart):
-    # Returns False if the player's move on space xstart, ystart is invalid.
-
-    # If it is a valid move, returns a list of spaces that would become the player's if they made a move here.
-
-    if board[xstart][ystart] != ' ' or not isOnBoard(xstart, ystart):
+    Returns:
+      list: the resulting changed disks, None if is not a valid move
+    """
+    def is_on_board(x_current, y_current):
+        return 0 <= x_current <= 7 and 0 <= y_current <= 7
+    if board[x][y] != ' ' or not is_on_board(x, y):
         return False
-    board[xstart][ystart] = tile  # temporarily set the tile on the board.
-
+    board[x][y] = tile
     if tile == 'X':
-        otherTile = 'O'
+        other_tile = 'O'
     else:
-        otherTile = 'X'
-
-    tilesToFlip = []
-    for xdirection, ydirection in [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]:
-        x, y = xstart, ystart
-        x += xdirection  # first step in the direction
-        y += ydirection  # first step in the direction
-        if isOnBoard(x, y) and board[x][y] == otherTile:
-            # There is a piece belonging to the other player next to our piece.
-            x += xdirection
-            y += ydirection
-            if not isOnBoard(x, y):
+        other_tile = 'X'
+    tiles_to_flip = []
+    for x_direction, y_direction in [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]:
+        x_start, y_start = x, y
+        x_start += x_direction  # first step in the direction
+        y_start += y_direction  # first step in the direction
+        if is_on_board(x_start, y_start) and board[x_start][y_start] == other_tile:
+            # There is a piece belonging to the other player next to current piece.
+            x_start += x_direction
+            y_start += y_direction
+            if not is_on_board(x_start, y_start):
                 continue
-            while board[x][y] == otherTile:
-                x += xdirection
-                y += ydirection
-                if not isOnBoard(x, y):  # break out of while loop, then continue in for loop
+            while board[x_start][y_start] == other_tile:
+                x_start += x_direction
+                y_start += y_direction
+                if not is_on_board(x_start, y_start):  # break out of while loop, then continue in for loop
                     break
-            if not isOnBoard(x, y):
+            if not is_on_board(x_start, y_start):
                 continue
-            if board[x][y] == tile:
-                # There are pieces to flip over. Go in the reverse direction until we reach the original space, noting all the tiles along the way.
+            if board[x_start][y_start] == tile:
+                # There are pieces to flip over. Go in the reverse direction until reach the original space, noting all the tiles along the way.
                 while True:
-                    x -= xdirection
-                    y -= ydirection
-                    if x == xstart and y == ystart:
+                    x_start -= x_direction
+                    y_start -= y_direction
+                    if x_start == x and y_start == y:
                         break
-                    tilesToFlip.append([x, y])
-
-    board[xstart][ystart] = ' '  # restore the empty space
-
-    if len(tilesToFlip) == 0:  # If no tiles were flipped, this is not a valid move.
-
-        return False
-
-    return tilesToFlip
+                    tiles_to_flip.append([x, y])
+    board[x][y] = ' '  # restore the empty space
+    return tiles_to_flip
 
 
-def getValidMoves(board, tile):
-    # Returns a list of [x,y] lists of valid moves for the given player on the given board.
-    validMoves = []
-    for x in range(8):
-        for y in range(8):
-            if isValidMove(board, tile, x, y) != False:
-                validMoves.append([x, y])
-    return validMoves
+def get_board_with_valid_moves(board, tile):
+    """Check if the move is valid and obtain the result
 
+    Args:
+        board (array): the 2-D array of the game board
+        tile (str): the side of the disk, 'X' if dark, 'O' if white
 
-def getBoardWithValidMoves(board, tile):
+    Returns:
+        array: the 2-D array of the new game board
+    """
     # Returns a new board with . marking the valid moves the given player can make.
-    dupeBoard = []
-    for i in range(8):
-        dupeBoard.append([' '] * 8)
-    for x in range(8):
-        for y in range(8):
-            dupeBoard[x][y] = board[x][y]
-    for x, y in getValidMoves(dupeBoard, tile):
-        dupeBoard[x][y] = '.'
-    return dupeBoard
+    new_board = board
+    for x, y in [[x, y] for x in range(len(board)) for y in range(len(board[x])) if valid_move(board, tile, x, y)]:
+        new_board[x][y] = '.'
+    return new_board
