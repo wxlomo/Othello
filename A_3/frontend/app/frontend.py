@@ -186,6 +186,13 @@ def game(game_id):
     if not response:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     game_data = ddb.make_board(response)
+    tile='X'
+    othertile='O'
+    if response['OUser']==player_name:
+        tile='O'
+        othertile='X'
+
+    moves=getValidMoves(game_data, tile)
     
     foe_name = response['FoeId']
     # front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
@@ -194,11 +201,27 @@ def game(game_id):
         if len(board) != 64:
             return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
         message = 'Waiting for another player to join...'
+    elif not moves:
+        if not getValidMoves(game_data, othertile):
+            winner=ddb.check_result(response)
+            ddb.finish_game(response, get_db(), winner)
+            player_score = ddb.count_disks(game_data, tile)
+            if player_name == winner:
+            # upload the final score to the ranking
+                return render_template('result', title='You Win :)',
+                                    message='Your final score is ' + str(player_score) + '.')
+                # Your final score is ' + str(player_score) +
+            elif winner != 'draw':
+                return render_template('result', title='You Lose :(',
+                                    message='Your final score is ' + str(player_score) + '.')
+            else:
+                return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
+        message = 'No valid moves'
+        board = board_render(game_id, player_name, game_data)
+        ddb.update_turn(response, [], player_name, get_db())
     else:
         if game_data['Turn'] == str(player_name):
-            tile='X'
-            if response['OUser']==player_name:
-                tile='O'
+            
             disks=getBoardWithValidMoves(game_data, tile)
             board = board_render(game_id, player_name, disks)
             if len(board) != 64:
