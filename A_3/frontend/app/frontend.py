@@ -69,8 +69,13 @@ def get_join():
     Returns:
       str: the arguments for the Jinja template
     """
-    all_hosts = ddb.get_invites('None', get_db())['GameId']
-    front.logger.debug('\n* Current pending games: ' + str(all_hosts))
+    all_hosts=[]
+    all_items = ddb.get_invites('None', get_db())
+    for i in all_items:
+        all_hosts.append(str(i['GameId']))
+        front.logger.debug('\n* Current pending games: ' + str(i['GameId']))
+    
+    
     return render_template('join.html', hosts=all_hosts)
 
 
