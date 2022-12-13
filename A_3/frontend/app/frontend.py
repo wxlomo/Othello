@@ -8,7 +8,7 @@
 import boto3
 import hashlib
 from . import front, config, dynamodb as ddb
-from flask import render_template, request, g, redirect, escape
+from flask import render_template, request, g, redirect, escap, jsonify
 
 
 def get_db():
@@ -187,7 +187,7 @@ def game(game_id, player_name):
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
     status = game_data["Status"]
     if status == 'Finished':
-        return refresh(game_id)
+        return refresh(game_id, player_name)
     game_board = ddb.make_board(game_data)
     foe_name = game_data['FoeId']
     if not foe_name or foe_name == 'None':  # the foe does not come in
@@ -288,6 +288,23 @@ def surrender(game_id, player_name):
     front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
     return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
 
+
+@front.route('/gameData=<game_id>')
+def gameData(game_id):
+    """
+    Method associated the with the '/gameData=<gameId>' route where the
+    gameId is in the URL.
+    Validates that the gameId actually exists.
+    Returns a JSON representation of the game to support AJAX to poll to see
+    if the page should be refreshed
+    """
+    game_data = ddb.get(game_id, get_db())
+    status = game_data["Status"]
+    turn = game_data["Turn"]
+
+    return jsonify(gameId = game_id,
+                   status = status,
+                   turn = turn)
 
 @front.route('/game/<game_id>/<player_name>/refresh')
 def refresh(game_id, player_name):
