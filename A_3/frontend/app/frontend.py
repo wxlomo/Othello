@@ -151,13 +151,15 @@ def join_game():
     game_id = request.form['game_id']
     front.logger.debug(
         '\n* Joining a game with name: ' + str(player_name) + ' and game id: ' + str(game_id))
-    response = ddb.get(game_id, get_db())
-    front.logger.debug(str(response))
-    if not response:
+    game_data = ddb.get(game_id, get_db())
+    if not game_data:
         return render_template('result', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
-    response = ddb.join_existed_game(response, get_db(), str(player_name))
-    front.logger.debug(str(response))
+    front.logger.debug(str(game_data))
+    response = ddb.join_existed_game(game_data, get_db(), str(player_name))
+    if response == 'Not a valid game':
+        return render_template('result', title='Fail to Join the Game',
+                               message='The game you want to join does not exist, please try again.')
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
@@ -184,7 +186,7 @@ def game(game_id, player_name):
     game_board = ddb.make_board(game_data)
     foe_name = game_data['FoeId']
     if not foe_name or foe_name == 'None':  # the foe does not come in
-        board = board_render(game_id, game_board, [])
+        board = board_render(game_id, player_name, game_board, [])
         front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
         message = 'Waiting for another player to join...'
     else:  # game is ready
@@ -197,6 +199,7 @@ def game(game_id, player_name):
             other_tile = 'O'
         if game_data['Turn'] == str(player_name):  # current player's turn
             moves = get_valid_moves(game_board, tile)
+            front.logger.debug('\n* Valid moves: ' + str(moves))
             if not moves:  # impossible to move
                 message = 'No valid move!'
                 if get_valid_moves(game_board, other_tile):
@@ -204,6 +207,7 @@ def game(game_id, player_name):
                 else:
                     player_score = ddb.count_disks(game_data, tile)
                     foe_score = ddb.count_disks(game_data, other_tile)
+                    front.logger.debug('\n* Game end with: ' + str(player_score) + ' vs ' + str(foe_score))
                     if player_name == game_data['HostId']:
                         foe_name = game_data['FoeId']
                     else:
@@ -214,10 +218,10 @@ def game(game_id, player_name):
                         ddb.finish_game(game_data, get_db(), foe_name)
                     else:
                         ddb.finish_game(game_data, get_db(), 'draw')
-            board = board_render(game_id, game_board, moves)
+            board = board_render(game_id, player_name, game_board, moves)
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
-            board = board_render(game_id, game_board, [])
+            board = board_render(game_id, player_name, game_board, [])
     return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
 
@@ -235,14 +239,13 @@ def move(game_id, player_name, loc):
     """
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    response = ddb.get(game_id, get_db())
-    front.logger.debug(str(response))
-    if not response:
+    game_data = ddb.get(game_id, get_db())
+    front.logger.debug(str(game_data))
+    if not game_data:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    game_board = ddb.make_board(response)
-    x_start = loc[0]
-    y_start = loc[1]
-    if response['OUser'] == player_name:
+    game_board = ddb.make_board(game_data)
+    x_start, y_start = loc[0], loc[1]
+    if game_data['OUser'] == player_name:
         tile = 'O'
     else:
         tile = 'X'
@@ -252,7 +255,7 @@ def move(game_id, player_name, loc):
     position = [str(x_start) + str(y_start)]
     for p in valid:
         position.append(str(p[0]) + str(p[1]))
-    ddb.update_turn(response, position, player_name, get_db())
+    ddb.update_turn(game_data, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
@@ -317,14 +320,16 @@ def refresh(game_id, player_name):
         else:
             return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
     else:
+        front.logger.debug('\n* Refreshing the game board')
         return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
-def board_render(game_id, board, valid_moves):
+def board_render(game_id, player_name, board, valid_moves):
     """Update the disks and placeable places on the game board
 
     Args:
       game_id (str): the identity of the game
+      player_name (str): the name of the player
       board (list): the nested list of the game board
       valid_moves (list): the coordinates of the valid moves
 
@@ -347,7 +352,7 @@ def board_render(game_id, board, valid_moves):
             elif current_disk == '.':
                 updated_list.append(
                     '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/'
-                    + str(game_id) + '/move/' + str(index[x][y]) + '">')
+                    + str(game_id) + '/' + str(player_name) + '/move/' + str(index[x][y]) + '">')
             else:
                 updated_list.append(' ')
     return updated_list
