@@ -125,8 +125,8 @@ def create_game():
       str: the arguments for the Jinja template
     """
     player_name = escape(request.form['player_name'].strip())
-    if not player_name or player_name == 'None':
-        return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
+    if not player_name or player_name == 'None' or player_name == 'draw':
+        return render_template('result', title='Invalid Player Name', message='Do not use spaces/None/draw as your player name')
     tile = request.form['player_side']
     front.logger.debug('\n* Creating a game with name: ' + str(player_name))
     game_id = str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
@@ -146,7 +146,7 @@ def join_game():
       str: the arguments for the Jinja template
     """
     player_name = escape(request.form['player_name'].strip())
-    if not player_name or player_name == 'None':
+    if not player_name or player_name == 'None' or player_name == 'draw':
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
     game_id = request.form['game_id']
     front.logger.debug(
