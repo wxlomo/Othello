@@ -7,9 +7,8 @@
 """
 import boto3
 import hashlib
-from . import front, config
-from . import dynamodb as ddb
-from flask import render_template, request, g, jsonify, session, redirect
+from . import front, config, dynamodb as ddb
+from flask import render_template, request, g, redirect, escape
 
 
 def get_db():
@@ -125,17 +124,15 @@ def create_game():
     Returns:
       str: the arguments for the Jinja template
     """
-    player_name = request.form['player_name'].strip()
-    if player_name or player_name == 'None':
-        session['player_name'] = player_name.strip()
-    else:
+    player_name = escape(request.form['player_name'].strip())
+    if not player_name or player_name == 'None':
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
-    side = request.form['player_side']  # do not support choosing side
-    front.logger.debug('\n* Creating a game with name: ' + str(session['player_name']))
+    tile = request.form['player_side']
+    front.logger.debug('\n* Creating a game with name: ' + str(player_name))
     game_id = str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
-    response = ddb.create_new_game(game_id, str(session['player_name']), 'None', side, get_db())
+    response = ddb.create_new_game(game_id, str(player_name), 'None', tile, get_db())
     front.logger.debug(str(response))
-    return redirect('/game/' + str(game_id))
+    return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
 @front.route('/join_game', methods=['POST'])
@@ -148,111 +145,90 @@ def join_game():
     Returns:
       str: the arguments for the Jinja template
     """
-    player_name = request.form['player_name'].strip()
-    if player_name or player_name == 'None':
-        session['player_name'] = player_name.strip()
-    else:
+    player_name = escape(request.form['player_name'].strip())
+    if not player_name or player_name == 'None':
         return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
     game_id = request.form['game_id']
     front.logger.debug(
-        '\n* Joining a game with name: ' + str(session["player_name"]) + ' and game id: ' + str('game_id'))
+        '\n* Joining a game with name: ' + str(player_name) + ' and game id: ' + str(game_id))
     response = ddb.get(game_id, get_db())
     front.logger.debug(str(response))
     if not response:
         return render_template('result', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
-    response = ddb.join_existed_game(response, get_db(), str(session["player_name"]))
+    response = ddb.join_existed_game(response, get_db(), str(player_name))
     front.logger.debug(str(response))
-    return redirect('/game/' + str(game_id))
+    return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
-@front.route('/game/<game_id>/')
-def game(game_id):
+@front.route('/game/<game_id>/<player_name>')
+def game(game_id, player_name):
     """Game board page render.
 
     Args:
       game_id (str): the identity of the game
+      player_name (str): the name of the player
 
     Returns:
       str: the arguments for the Jinja template
     """
-    
-    player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
-    response = ddb.get(game_id, get_db())
-    front.logger.debug(str(response))
-    if not response:
+    game_data = ddb.get(game_id, get_db())
+    front.logger.debug(str(game_data))
+    if not game_data:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    status = response["Status"]
+    status = game_data["Status"]
     if status == 'Finished':
         return refresh(game_id)
-    game_data = ddb.make_board(response)
-    if response['OUser'] == player_name:
-        tile = 'O'
-        other_tile = 'X'
-    else:
-        tile = 'X'
-        other_tile = 'O'
-
-    moves = getValidMoves(game_data, tile)
-    
-    foe_name = response['FoeId']
-    if not foe_name or foe_name == 'None':
-        board = board_render(game_id, player_name, game_data)
-        if len(board) != 64:
-            return render_template('result', title='500 Internal Server Error',
-                                   message='Failed to render the game board.')
+    game_board = ddb.make_board(game_data)
+    foe_name = game_data['FoeId']
+    if not foe_name or foe_name == 'None':  # the foe does not come in
+        board = board_render(game_id, game_board, [])
         front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
         message = 'Waiting for another player to join...'
-    elif not moves:
-        if not getValidMoves(game_data, othertile):
-            winner=ddb.check_result(response)
-            ddb.finish_game(response, get_db(), winner)
-            player_score = ddb.count_disks(game_data, tile)
-            if player_name == winner:
-            # upload the final score to the ranking
-                return render_template('result', title='You Win :)',
-                                    message='Your final score is ' + str(player_score) + '.')
-                # Your final score is ' + str(player_score) +
-            elif winner != 'draw':
-                return render_template('result', title='You Lose :(',
-                                    message='Your final score is ' + str(player_score) + '.')
-            else:
-                return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
-        message = 'No valid moves'
-        board = board_render(game_id, player_name, game_data)
-        ddb.update_turn(response, [], player_name, get_db())
-    else:
-        if game_data['Turn'] == str(player_name):
-            
-            disks=getBoardWithValidMoves(game_data, tile)
-            board = board_render(game_id, player_name, disks)
-            if len(board) != 64:
-                return render_template('result', title='500 Internal Server Error',
-                                       message='Failed to render the game board.')
+    else:  # game is ready
+        if game_data['OUser'] == player_name:
+            tile = 'O'
+            other_tile = 'X'
+        else:
+            tile = 'X'
+            other_tile = 'O'
+        if game_data['Turn'] == str(player_name):  # current player's turn
+            moves = get_valid_moves(game_board, tile)
+            if not moves:  # impossible to move
+                player_score = ddb.count_disks(game_data, tile)
+                foe_score = ddb.count_disks(game_data, other_tile)
+                if player_name == game_data['HostId']:
+                    foe_name = game_data['FoeId']
+                else:
+                    foe_name = game_data['HostId']
+                if player_score > foe_score:
+                    ddb.finish_game(game_data, get_db(), player_name)
+                elif player_score < foe_score:
+                    ddb.finish_game(game_data, get_db(), foe_name)
+                else:
+                    ddb.finish_game(game_data, get_db(), 'draw')
+            board = board_render(game_id, game_board, moves)
             message = 'Now it is your turn!'
         else:
-            board = board_render(game_id, player_name, game_data)
-            if len(board) != 64:
-                return render_template('result', title='500 Internal Server Error',
-                                       message='Failed to render the game board.')
+            board = board_render(game_id, game_board, [])
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
     return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
 
-@front.route('/game/<game_id>/move/<loc>')
-def move(game_id, loc):
+@front.route('/game/<game_id>/<player_name>/move/<loc>')
+def move(game_id, player_name, loc):
     """Player makes a move
 
     Args:
       game_id (str): the identity of the game
+      player_name (str): the name of the player
       loc (str): the location to place the disk
 
     Returns:
       str: the arguments for the Jinja template
     """
-    player_name = session['player_name']
     if not player_name or not game_id or not loc:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     response = ddb.get(game_id, get_db())
@@ -274,20 +250,20 @@ def move(game_id, loc):
         position.append(str(p[0]) + str(p[1]))
     ddb.update_turn(response, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
-    return redirect('/game/' + str(game_id))
+    return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
-@front.route('/game/<game_id>/surrender', methods=['POST'])
-def surrender(game_id):
+@front.route('/game/<game_id>/<player_name>/surrender', methods=['POST'])
+def surrender(game_id, player_name):
     """A player surrender
 
     Args:
       game_id (str): the identity of the game
+      player_name (str): the name of the player
 
     Returns:
       str: the arguments for the Jinja template
     """
-    player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
@@ -301,17 +277,17 @@ def surrender(game_id):
     return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
 
 
-@front.route('/game/<game_id>/refresh')
-def refresh(game_id):
-    """Refresh the game status
+@front.route('/game/<game_id>/<player_name>/refresh')
+def refresh(game_id, player_name):
+    """Refresh the game board, check if the game is finished
 
     Args:
       game_id (str): the identity of the game
+      player_name (str): the name of the player
 
     Returns:
       str: the arguments for the Jinja template
     """
-    player_name = session['player_name']
     if not player_name or not game_id:
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
@@ -319,65 +295,65 @@ def refresh(game_id):
     status = game_data["Status"]
     if status == 'Finished':
         if game_data['OUser'] == player_name:
-            player_side = 'O'
+            tile = 'O'
         else:
-            player_side = 'X'
-        player_score = ddb.count_disks(game_data, player_side)
+            tile = 'X'
+        player_score = ddb.count_disks(game_data, tile)
         front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score))
         winner = game_data['Winner']
         response = ddb.teardown(game_id, get_db())
         front.logger.debug(str(response))
-        if player_name == winner:
+        if winner == player_name:
             # upload the final score to the ranking
             return render_template('result', title='You Win :)',
                                    message='Your final score is ' + str(player_score) + '.')
-            # Your final score is ' + str(player_score) +
         elif winner != 'draw':
             return render_template('result', title='You Lose :(',
                                    message='Your final score is ' + str(player_score) + '.')
         else:
             return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
     else:
-        return redirect('/game/' + str(game_id))
+        return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
-def board_render(game_id, player_name, disks):
+def board_render(game_id, board, valid_moves):
     """Update the disks and placeable places on the game board
 
     Args:
       game_id (str): the identity of the game
-      player_name (str): the name of current player
-      disks (list): the list of disks on the game board
+      board (list): the nested list of the game board
+      valid_moves (list): the coordinates of the valid moves
 
     Returns:
       list: the updated lattices list to update the page
     """
-    index = [[outer * 10 + inner for inner in range(8)] for outer in range(8)]
-    for i in range(len(index[0])):
-        index[0][i] = '0' + str(i)
-    grid = disks  # Preprocess: mark the lattices as dark, light, or placeable, size must be 64,
-    board = []
-    for row in range(len(index)):
-        for lattice in range(len(index[row])):
-            current_disk = grid[row][lattice]
+    index = [[str(outer) + str(inner) for inner in range(len(board[outer]))] for outer in range(len(board))]
+    updated_board = board
+    updated_list = []
+    if valid_moves:
+        for x, y in valid_moves:
+            updated_board[x][y] = '.'
+    for y in range(len(updated_board)):
+        for x in range(len(updated_board[y])):
+            current_disk = updated_board[x][y]
             if current_disk == 'X':
-                board.append('<img src="src/img/dark.svg">')
+                updated_list.append('<img src="src/img/dark.svg">')
             elif current_disk == 'O':
-                board.append('<img src="src/img/light.svg">')
+                updated_list.append('<img src="src/img/light.svg">')
             elif current_disk == '.':
-                board.append(
+                updated_list.append(
                     '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/'
-                    + str(game_id) + '/move/' + str(index[row][lattice]) + '">')
+                    + str(game_id) + '/move/' + str(index[x][y]) + '">')
             else:
-                board.append(' ')
-    return board
+                updated_list.append(' ')
+    return updated_list
 
 
 def valid_move(board, tile, x, y):
     """Check if the move is valid and obtain the result
 
     Args:
-      board (array): the 2-D array of the game board
+      board (list): the nested list of the game board
       tile (str): the side of the disk, 'X' if dark, 'O' if white
       x (int): the x coordinate of the moved disk
       y (int): the y coordinate of the moved disk
@@ -385,8 +361,10 @@ def valid_move(board, tile, x, y):
     Returns:
       list: the resulting changed disks, None if is not a valid move
     """
+
     def is_on_board(x_current, y_current):
         return 0 <= x_current <= 7 and 0 <= y_current <= 7
+
     if board[x][y] != ' ' or not is_on_board(x, y):
         return False
     board[x][y] = tile
@@ -424,18 +402,14 @@ def valid_move(board, tile, x, y):
     return tiles_to_flip
 
 
-def get_board_with_valid_moves(board, tile):
+def get_valid_moves(board, tile):
     """Check if the move is valid and obtain the result
 
     Args:
-        board (array): the 2-D array of the game board
+        board (list): the nested list of the game board
         tile (str): the side of the disk, 'X' if dark, 'O' if white
 
     Returns:
-        array: the 2-D array of the new game board
+        list: the list of the valid moves
     """
-    # Returns a new board with . marking the valid moves the given player can make.
-    new_board = board
-    for x, y in [[x, y] for x in range(len(board)) for y in range(len(board[x])) if valid_move(board, tile, x, y)]:
-        new_board[x][y] = '.'
-    return new_board
+    return [[x, y] for x in range(len(board)) for y in range(len(board[x])) if valid_move(board, tile, x, y)]

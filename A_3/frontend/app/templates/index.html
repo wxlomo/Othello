@@ -4,48 +4,15 @@
  * Editor: Weixuan Yang
  * Date: December 10, 2022
 -->
-<!doctype html>
-<html lang="en" class="h-100">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="Weixuan Yang">
-    <link href="src/css/bootstrap.min.css" rel="stylesheet">
-    <link href="src/css/base.css" rel="stylesheet">
-    <link rel="shortcut icon" href="src/img/icon.ico">
-    <link href='src/css/quicksand.css' rel='stylesheet'>
-    <title>Othello</title>
-</head>
-
-<body class="d-flex h-100 text-center text-bg-dark" style="background-size:100% 100%; background-image: url(src/img/bg.jpg);">
-    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
-        <header class="mb-auto">
-            <div>
-                <h3 class="float-md-start mb-0">Othello</h3>
-                <nav class="nav nav-masthead justify-content-center float-md-end">
-                    <a class="nav-link fw-bold py-1 px-0 active" href="index.html">Play</a>
-                    <a class="nav-link fw-bold py-1 px-0" href="rule.html">Rule</a>
-                    <a class="nav-link fw-bold py-1 px-0" href="rank.html">Rank</a>
-                    <a class="nav-link fw-bold py-1 px-0" href="about.html">About</a>
-                </nav>
-            </div>
-        </header>
-
-        <main class="px-3">
-            <p class="lead">Othello, aka Reversi, is a strategy board game for two players. Its name was selected from the Shakespearean play "Othello, the Moor of Venice".
-            </p>
-            <br>
-            <p class="lead">
-                <a href="create.html" class="btn btn-lg btn-secondary fw-bold border-white bg-white" style="width: 200px;">New Game</a>
-                <a href="join.html" class="btn btn-lg btn-secondary fw-bold border-white bg-white" style="width: 200px;">Join Game</a>
-            </p>
-        </main>
-
-        <footer class="mt-auto text-white-50">
-            <p>Copyright © 2022 <a href="https://www.linkedin.com/in/weixuanyang/" class="text-white">@Weixuan Yang</a></p>
-        </footer>
-    </div>
-</body>
-
-</html>
+{% extends "layout.html" %}
+{% block bg %}bg{% endblock bg %}
+{% block play %}active{% endblock play %}
+{% block content %}
+<p class="lead">Othello, aka Reversi, is a strategy board game for two players. Its name was selected from the Shakespearean play "Othello, the Moor of Venice".
+</p>
+<br>
+<p class="lead">
+    <a href="create.html" class="btn btn-lg btn-secondary fw-bold border-white bg-white" style="width: 200px;">New Game</a>
+    <a href="join.html" class="btn btn-lg btn-secondary fw-bold border-white bg-white" style="width: 200px;">Join Game</a>
+</p>
+{% endblock content %}

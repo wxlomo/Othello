@@ -341,4 +341,3 @@ def get_games_status(user, status, games_table):
         return foe_games
     else:
         return None
-
