@@ -188,6 +188,7 @@ def game(game_id, player_name):
         front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
         message = 'Waiting for another player to join...'
     else:  # game is ready
+        message = 'Now it is your turn!'
         if game_data['OUser'] == player_name:
             tile = 'O'
             other_tile = 'X'
@@ -197,23 +198,26 @@ def game(game_id, player_name):
         if game_data['Turn'] == str(player_name):  # current player's turn
             moves = get_valid_moves(game_board, tile)
             if not moves:  # impossible to move
-                player_score = ddb.count_disks(game_data, tile)
-                foe_score = ddb.count_disks(game_data, other_tile)
-                if player_name == game_data['HostId']:
-                    foe_name = game_data['FoeId']
+                message = 'No valid move!'
+                if get_valid_moves(game_board, other_tile):
+                    ddb.update_turn(game_data, [], player_name, get_db())
                 else:
-                    foe_name = game_data['HostId']
-                if player_score > foe_score:
-                    ddb.finish_game(game_data, get_db(), player_name)
-                elif player_score < foe_score:
-                    ddb.finish_game(game_data, get_db(), foe_name)
-                else:
-                    ddb.finish_game(game_data, get_db(), 'draw')
+                    player_score = ddb.count_disks(game_data, tile)
+                    foe_score = ddb.count_disks(game_data, other_tile)
+                    if player_name == game_data['HostId']:
+                        foe_name = game_data['FoeId']
+                    else:
+                        foe_name = game_data['HostId']
+                    if player_score > foe_score:
+                        ddb.finish_game(game_data, get_db(), player_name)
+                    elif player_score < foe_score:
+                        ddb.finish_game(game_data, get_db(), foe_name)
+                    else:
+                        ddb.finish_game(game_data, get_db(), 'draw')
             board = board_render(game_id, game_board, moves)
-            message = 'Now it is your turn!'
         else:
-            board = board_render(game_id, game_board, [])
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
+            board = board_render(game_id, game_board, [])
     return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
 
 
