@@ -8,7 +8,7 @@
 import boto3
 import hashlib
 from . import front, config, dynamodb as ddb
-from flask import render_template, request, g, redirect, escap, jsonify
+from flask import render_template, request, g, redirect, escape, jsonify
 
 
 def get_db():
