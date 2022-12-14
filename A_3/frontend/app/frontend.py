@@ -6,7 +6,7 @@
  * Date: Dec. 11, 2022
 """
 from . import front, dynamodb as ddb, games_table, rank_bucket
-from flask import render_template, request, redirect, escape, jsonify
+from flask import render_template, request, redirect, escape, jsonify, json
 from uuid import uuid4
 
 
@@ -214,7 +214,10 @@ def game(game_id, player_name):
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
             board = board_render(game_id, player_name, game_board, [])
-    return render_template('game.html', board=board, surr='/game/' + str(game_id)+'/' + str(player_name) + '/surrender', message=message)
+    gameData = {'gameId': game_id, 'status': status, 'turn': game_data['Turn']};
+    gameJson = json.dumps(gameData)
+    return render_template('game.html', board=board, surr='/game/' + str(game_id)+'/' + str(player_name) + '/surrender', message=message, gameId=game_id,
+                            gameJson=gameJson)
 
 
 @front.route('/game/<game_id>/<player_name>/move/<loc>', methods=['POST'])
