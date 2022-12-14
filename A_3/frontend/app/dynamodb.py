@@ -343,8 +343,7 @@ def get_games_status(user, status, games_table):
                                   )
     
     if host_games['Items']:
-        print(host_games)
-    
+
         return host_games['Items'][0]
     elif foe_games['Items']:
         return foe_games['Items'][0]
