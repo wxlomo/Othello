@@ -18,8 +18,14 @@
                     <td class="lead tg-0lax">&nbsp&nbsp<input type="text" id="player_name" style="width: 200px; color:black" maxlength="10" name="player_name" required></td>
                 </tr>
                 <tr>
-                    <td class="lead tg-0lax"><b>Game ID:</b></td>
-                    <td class="lead tg-0lax">&nbsp&nbsp<input type="text" id="game_id" style="width: 200px; color:black"  name="game_id" required></td>
+                    <td class="lead tg-0lax"><b>Host Name:</b></td>
+                    <td class="lead tg-0lax">&nbsp
+                        <input list="pending" name="host_name" style="width: 200px; color:black"/>
+                            <datalist id="pending">
+                                {% for row in pending %}
+                                <option value="{{row}}">
+                                {% endfor %}
+                            </datalist></p>
                     </td>
                 </tr>
             </tbody>

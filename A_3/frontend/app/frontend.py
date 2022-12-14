@@ -72,9 +72,9 @@ def get_join():
     all_hosts = []
     all_items = ddb.get_invites('None', get_db())
     for i in all_items:
-        all_hosts.append(str(i['GameId']))
+        all_hosts.append(str(i['HostId']))
         front.logger.debug('\n* Current pending games: ' + str(i['GameId']))
-    return render_template('join.html', hosts=all_hosts)
+    return render_template('join.html', pending=all_hosts)
 
 
 @front.route('/rule')
@@ -151,10 +151,10 @@ def join_game():
     player_name = escape(request.form['player_name'].strip())
     if not player_name or player_name == 'None' or player_name == 'draw':
         return render_template('result.html', title='Invalid Player Name', message='Do not use spaces as your player name')
-    game_id = request.form['game_id']
+    host_name = request.form['host_name']
     front.logger.debug(
-        '\n* Joining a game with name: ' + str(player_name) + ' and game id: ' + str(game_id))
-    game_data = ddb.get(game_id, get_db())
+        '\n* Joining a game with name: ' + str(player_name) + ' and host name: ' + str(host_name))
+    game_data = ddb.get_games_status(host_name, "Pending", get_db())
     if not game_data:
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
@@ -163,7 +163,7 @@ def join_game():
     if response == 'Not a valid game':
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
-    return redirect('/game/' + str(game_id) + '/' + str(player_name))
+    return redirect('/game/' + str(game_data['GameId']) + '/' + str(player_name))
 
 
 @front.route('/game/<game_id>/<player_name>')
