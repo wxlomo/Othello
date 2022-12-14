@@ -6,7 +6,7 @@
  * Date: Dec. 11, 2022
 """
 from . import front, dynamodb as ddb, games_table, rank_bucket, ses
-from flask import render_template, request, redirect, escape, jsonify, json
+from flask import render_template, request, redirect, escape, jsonify, json, url_for
 from uuid import uuid4
 
 
@@ -144,7 +144,8 @@ def create_game():
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
     '''
-    return redirect('/game/' + str(game_id) + '/' + str(player_name))
+    return redirect(url_for('game', game_id=str(game_id),player_name=str(player_name)))
+# redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
 @front.route('/join_game', methods=['POST'])
@@ -174,7 +175,8 @@ def join_game():
     if response == 'Not a valid game':
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
-    return redirect('/game/' + str(game_data['GameId']) + '/' + str(player_name))
+    return redirect(url_for('game', game_id=str(game_data['GameId']),player_name=str(player_name)))
+# redirect('/game/' + str(game_data['GameId']) + '/' + str(player_name))
 
 
 @front.route('/game/<game_id>/<player_name>')
@@ -280,7 +282,8 @@ def move(game_id, player_name, loc):
         position.append(str(p[0]) + str(p[1]))
     ddb.update_turn(game_data, position, player_name, games_table)
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
-    return redirect('/game/' + str(game_id) + '/' + str(player_name))
+    return redirect(url_for('game', game_id=str(game_id),player_name=str(player_name)))
+# redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
 @front.route('/game/<game_id>/<player_name>/surrender', methods=['POST'])
@@ -366,7 +369,8 @@ def refresh(game_id, player_name):
                                    message='Your final score is ' + str(player_score) + '.')
     else:
         front.logger.debug('\n* Refreshing the game board')
-        return redirect('/game/' + str(game_id) + '/' + str(player_name))
+        return redirect(url_for('game', game_id=str(game_id),player_name=str(player_name)))
+    # redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
 def board_render(game_id, player_name, board, valid_moves):
