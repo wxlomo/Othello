@@ -9,7 +9,7 @@ import boto3
 import hashlib
 from . import front, config, dynamodb as ddb
 from flask import render_template, request, g, redirect, escape, jsonify
-
+from uuid import uuid4
 
 def get_db():
     """Get the game table.
@@ -134,7 +134,8 @@ def create_game():
         return render_template('result.html', title='Invalid Player Name', message='Do not use spaces/None/draw as your player name')
     tile = request.form['player_side']
     front.logger.debug('\n* Creating a game with name: ' + str(player_name))
-    game_id = str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
+    game_id = str(uuid4())
+    # str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
     response = ddb.create_new_game(game_id, str(player_name), 'None', tile, get_db())
     front.logger.debug(str(response))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
