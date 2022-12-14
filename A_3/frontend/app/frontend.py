@@ -80,7 +80,7 @@ def get_rank():
     rank = []
     try:
         for obj in rank_bucket.objects.all():
-            rank.append([obj.key, obj.body])
+            rank.append([obj.key, obj.bod.from_bytes(8, byteorder='big')])
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
         return render_template('result.html', title='500 Internal Server Error',
@@ -314,13 +314,13 @@ def refresh(game_id, player_name):
         else:
             tile = 'X'
         player_score = ddb.count_disks(game_data, tile)
-        front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score))
+        front.logger.debug('\n* The player ' + str(player_name) + ' has score ' + str(player_score))
         winner = game_data['Winner']
         # response = ddb.teardown(game_id, games_table)
         # front.logger.debug(str(response))
         if winner == player_name:
             try:
-                rank_bucket.put_object(Key=winner, Body=player_score)
+                rank_bucket.put_object(Key=winner, Body=player_score.to_bytes(8, byteorder='big'))
             except Exception as error:
                 front.logger.debug('\n* Error: ' + str(error))
                 return render_template('result.html', title='500 Internal Server Error',
