@@ -5,7 +5,7 @@
  * Author: Weixuan Yang
  * Date: Dec. 11, 2022
 """
-from . import front, dynamodb as ddb, games_table, rank_bucket
+from . import front, dynamodb as ddb, games_table, rank_bucket, ses
 from flask import render_template, request, redirect, escape, jsonify
 from uuid import uuid4
 
@@ -120,6 +120,28 @@ def create_game():
     game_id = str(uuid4())
     response = ddb.create_new_game(game_id, str(player_name), 'None', tile, games_table)
     front.logger.debug(str(response))
+    '''
+    invite_email = request.form['invite_email'].strip()
+    try:
+        ses.send_email(
+            Destination={'ToAddresses': [invite_email,],},
+            Message={
+                'Body': {
+                    'Text': {
+                        'Charset': "UTF-8",
+                        'Data': 'Greetings! Your friend invite you to join them playing Othello! Plese join use their player name: ' + str(player_name),
+                    },
+                },
+                'Subject': {
+                    'Charset': "UTF-8",
+                    'Data': 'Game Invitation from ' + str(player_name),
+                },
+            },
+            source='othello.endreim@outlook.com',
+        )
+    except Exception as error:
+        front.logger.debug('\n* Error: ' + str(error))
+    '''
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
