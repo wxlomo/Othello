@@ -1,10 +1,9 @@
-import boto3
-from . import config
 from boto3.dynamodb.conditions import Key
-from datetime               import datetime
+from datetime import datetime
+
 
 def get(game_id, games_table):
-    game=games_table.get_item(Key={'GameId': game_id})
+    game = games_table.get_item(Key={'GameId': game_id})
     if 'Item' in game:
         return game['Item']
     else:
@@ -16,80 +15,6 @@ def teardown(game_id, games_table):
         Key={'GameId': game_id}
     )
     return 'Successfully delete entry ' + str(game_id)
-
-
-def create_game_table():
-    db = boto3.resource('dynamodb',
-                        region_name=config.aws_key['aws_region'],
-                        aws_access_key_id=config.aws_key['aws_access_key_id'],
-                        aws_secret_access_key=config.aws_key['aws_secret_access_key'])
-
-    games_table = db.create_table(TableName="Games",
-                                  KeySchema=[
-                                      {'AttributeName': 'GameId', 'KeyType': 'HASH'}
-                                  ],
-                                  AttributeDefinitions=[
-                                      {'AttributeName': 'GameId', 'AttributeType': 'S'},
-                                      {'AttributeName': 'FoeId', 'AttributeType': 'S'},
-                                      {'AttributeName': 'HostId', 'AttributeType': 'S'},
-                                      {'AttributeName': 'Statusnow', 'AttributeType': 'S'}
-                                  ],
-                                  ProvisionedThroughput={
-                                      'ReadCapacityUnits': 1,
-                                      'WriteCapacityUnits': 1
-                                  },
-                                  GlobalSecondaryIndexes=[
-                                      {
-                                          'IndexName': 'FoeId',
-                                          'KeySchema': [
-                                              {
-                                                  'AttributeName': 'FoeId',
-                                                  'KeyType': 'HASH',
-
-                                              },
-
-                                              {
-                                                  'AttributeName': 'Statusnow',
-                                                  'KeyType': 'RANGE',
-                                              }
-
-                                          ],
-                                          'Projection': {
-                                              'ProjectionType': 'ALL',
-
-                                          },
-                                          'ProvisionedThroughput': {
-                                              'ReadCapacityUnits': 1,
-                                              'WriteCapacityUnits': 1
-                                          }
-                                      },
-                                      {
-                                          'IndexName': 'HostId',
-                                          'KeySchema': [
-                                              {
-                                                  'AttributeName': 'HostId',
-                                                  'KeyType': 'HASH',
-
-                                              },
-
-                                              {
-                                                  'AttributeName': 'Statusnow',
-                                                  'KeyType': 'RANGE',
-                                              }
-                                          ],
-                                          'Projection': {
-                                              'ProjectionType': 'ALL',
-
-                                          },
-                                          'ProvisionedThroughput': {
-                                              'ReadCapacityUnits': 1,
-                                              'WriteCapacityUnits': 1
-                                          }
-                                      }
-                                  ]
-                                  )
-    games_table.wait_until_exists()
-    return games_table
 
 
 def create_new_game(game_id, creator, joiner, creator_side, games_table):
@@ -112,7 +37,7 @@ def create_new_game(game_id, creator, joiner, creator_side, games_table):
         "Statusnow": status,
         "OUser": o_user,
         "Turn": ' ',
-        "Times"       : now,
+        "Times": now,
         "Winner": 'unfinished',
         '00': ' ',
         '01': ' ',
@@ -278,7 +203,7 @@ def finish_game(item, games_table, winner_id):
         Key={'GameId': game_id},
         UpdateExpression="set Statusnow = :r, Times = :t , Winner = :w",
         ExpressionAttributeValues={
-            ':r': status, ':t' : date , ':w': str(winner_id)},
+            ':r': status, ':t': date, ':w': str(winner_id)},
         ReturnValues="ALL_NEW"
     )
     return new_item['Attributes']
@@ -341,9 +266,9 @@ def get_games_status(user, status, games_table):
                                       'Statusnow').begins_with(status)
                                   # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "Pending"}
                                   )
-    if not host_games:
-        return host_games
-    elif not foe_games:
-        return foe_games
+    if host_games['Items']:
+        return host_games['Items'][0]
+    elif foe_games['Items']:
+        return foe_games['Items'][0]
     else:
         return None
