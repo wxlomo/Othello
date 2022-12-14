@@ -341,9 +341,12 @@ def get_games_status(user, status, games_table):
                                       'Statusnow').begins_with(status)
                                   # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "Pending"}
                                   )
-    if not host_games:
-        return host_games
-    elif not foe_games:
-        return foe_games
+    
+    if host_games['Items']:
+        print(host_games)
+    
+        return host_games['Items'][0]
+    elif foe_games['Items']:
+        return foe_games['Items'][0]
     else:
         return None
