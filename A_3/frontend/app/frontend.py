@@ -402,9 +402,10 @@ def board_render(game_id, player_name, board, valid_moves):
             elif current_disk == 'O':
                 updated_list.append('<img src="/static/img/light.svg">')
             elif current_disk == '.':
+                moveurl=url_for('move', game_id=str(game_id),player_name=str(player_name),loc=str(index[x][y]))
+                print (moveurl)
                 updated_list.append(
-                    '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/'
-                    + str(game_id) + '/' + str(player_name) + '/move/' + str(index[x][y]) + '">')
+                    '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+moveurl+'" >')
             else:
                 updated_list.append(' ')
     return updated_list
