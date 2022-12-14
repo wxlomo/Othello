@@ -155,7 +155,6 @@ def join_game():
     front.logger.debug(
         '\n* Joining a game with name: ' + str(player_name) + ' and host name: ' + str(host_name))
     game_data = ddb.get_games_status(host_name, "Pending", get_db())
-    print(game_data)
     if not game_data:
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
