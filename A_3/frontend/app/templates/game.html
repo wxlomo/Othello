@@ -7,10 +7,11 @@
 {% extends "layout.html" %}
 {% block bg %}bg2{% endblock bg %}
 {% block content %}
+
 <form action="/play" method="post" enctype="multipart/form-data">
     <div class="board-container">
         {% for row in board %}
-        <div>{{row}}</div>
+        <div>{{row|safe}}</div>
         {% endfor %}
     </div>
 </form>
