@@ -24,7 +24,7 @@ s3 = boto3.resource('s3',
 if 'othello-ranking' not in s3_client.list_buckets()['Buckets']:
     rank_bucket = s3.create_bucket(Bucket='othello-ranking', ACL='public-read-write')
     rank_bucket.wait_until_exists()
-rank_bucket = s3.Bucket(name='Games')
+rank_bucket = s3.Bucket(name='othello-ranking')
 
 db_client = boto3.client('dynamodb',
                          region_name=config.aws_key['aws_region'],

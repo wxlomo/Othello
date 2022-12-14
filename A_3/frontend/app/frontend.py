@@ -80,7 +80,7 @@ def get_rank():
     rank = []
     try:
         for obj in rank_bucket.objects.all():
-            rank.append([obj.key, obj.bod.from_bytes(8, byteorder='big')])
+            rank.append([obj.key, int.from_bytes(obj.get()['Body'].read(), byteorder='big')])
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
         return render_template('result.html', title='500 Internal Server Error',
