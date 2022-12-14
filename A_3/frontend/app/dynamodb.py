@@ -20,10 +20,10 @@ def teardown(game_id, games_table):
 def create_new_game(game_id, creator, joiner, creator_side, games_table):
     games = get_games_status(creator, "Pending", games_table)
     if games:
-        return "Exist pending game id:" + games[0]['GameId']
+        return games
     games = get_games_status(creator, "Playing", games_table)
     if games:
-        return "Exist playing game id:" + games[0]['GameId']
+        return games
     if creator_side == 'x':
         o_user = joiner
     else:
@@ -148,6 +148,12 @@ def update_turn(item, position, current_player, games_table):
 
 def join_existed_game(item, games_table, user_id):
     game_id = item["GameId"]
+    games = get_games_status(user_id, "Pending", games_table)
+    if games:
+        return "Exist pending game id:" + games['GameId']
+    games = get_games_status(user_id, "Playing", games_table)
+    if games:
+        return "Exist playing game id:" + games['GameId']
     status = item["Statusnow"]
     host_id = item["HostId"]
     if status != 'Pending':

@@ -121,6 +121,7 @@ def create_game():
     game_id = str(uuid4())
     response = ddb.create_new_game(game_id, str(player_name), 'None', tile, games_table)
     front.logger.debug(str(response))
+    game_id = response['GameId']
     '''
     invite_email = request.form['invite_email'].strip()
     try:
