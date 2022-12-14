@@ -371,12 +371,12 @@ def board_render(game_id, player_name, board, valid_moves):
         for x in range(len(updated_board[y])):
             current_disk = updated_board[x][y]
             if current_disk == 'X':
-                updated_list.append('<img src="src/img/dark.svg">')
+                updated_list.append('<img src="/static/img/dark.svg">')
             elif current_disk == 'O':
-                updated_list.append('<img src="src/img/light.svg">')
+                updated_list.append('<img src="/static/img/light.svg">')
             elif current_disk == '.':
                 updated_list.append(
-                    '<input type="image" src="src/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/'
+                    '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction="/game/'
                     + str(game_id) + '/' + str(player_name) + '/move/' + str(index[x][y]) + '">')
             else:
                 updated_list.append(' ')
