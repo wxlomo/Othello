@@ -6,10 +6,10 @@
  * Date: Dec. 11, 2022
 """
 import boto3
-import hashlib
 from . import front, config, dynamodb as ddb
 from flask import render_template, request, g, redirect, escape, jsonify
 from uuid import uuid4
+
 
 def get_db():
     """Get the game table.
@@ -69,13 +69,11 @@ def get_join():
     Returns:
       str: the arguments for the Jinja template
     """
-    all_hosts=[]
+    all_hosts = []
     all_items = ddb.get_invites('None', get_db())
     for i in all_items:
         all_hosts.append(str(i['GameId']))
         front.logger.debug('\n* Current pending games: ' + str(i['GameId']))
-    
-    
     return render_template('join.html', hosts=all_hosts)
 
 
@@ -135,7 +133,6 @@ def create_game():
     tile = request.form['player_side']
     front.logger.debug('\n* Creating a game with name: ' + str(player_name))
     game_id = str(uuid4())
-    # str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
     response = ddb.create_new_game(game_id, str(player_name), 'None', tile, get_db())
     front.logger.debug(str(response))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
@@ -191,8 +188,8 @@ def game(game_id, player_name):
         return refresh(game_id, player_name)
     game_board = ddb.make_board(game_data)
     foe_name = game_data['FoeId']
-    if player_name==foe_name:
-        foe_name=game_data['HostId']
+    if player_name == foe_name:
+        foe_name = game_data['HostId']
     
     if not foe_name or foe_name == 'None':  # the foe does not come in
         board = board_render(game_id, player_name, game_board, [])
@@ -264,8 +261,6 @@ def move(game_id, player_name, loc):
     position = [str(x_start) + str(y_start)]
     for p in valid:
         position.append(str(p[0]) + str(p[1]))
-    print(valid)
-    print(position)
     ddb.update_turn(game_data, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
@@ -295,10 +290,10 @@ def surrender(game_id, player_name):
     return render_template('result.html', title='You Lose :(', message='Sorry to hear your leave.')
 
 
-@front.route('/gameData=<game_id>')
-def gameData(game_id):
+@front.route('/data/<game_id>')
+def data(game_id):
     """
-    Method associated the with the '/gameData=<gameId>' route where the
+    Method associated the with the '/data/<gameId>' route where the
     gameId is in the URL.
     Validates that the gameId actually exists.
     Returns a JSON representation of the game to support AJAX to poll to see
@@ -308,9 +303,8 @@ def gameData(game_id):
     status = game_data["Statusnow"]
     turn = game_data["Turn"]
 
-    return jsonify(gameId = game_id,
-                   status = status,
-                   turn = turn)
+    return jsonify(gameId=game_id, status=status, turn=turn)
+
 
 @front.route('/game/<game_id>/<player_name>/refresh')
 def refresh(game_id, player_name):
