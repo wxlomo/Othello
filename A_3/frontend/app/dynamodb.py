@@ -28,7 +28,7 @@ def create_game_table():
                                       {'AttributeName': 'GameId', 'AttributeType': 'S'},
                                       {'AttributeName': 'FoeId', 'AttributeType': 'S'},
                                       {'AttributeName': 'HostId', 'AttributeType': 'S'},
-                                      {'AttributeName': 'Status', 'AttributeType': 'S'}
+                                      {'AttributeName': 'Statusnow', 'AttributeType': 'S'}
                                   ],
                                   ProvisionedThroughput={
                                       'ReadCapacityUnits': 1,
@@ -45,7 +45,7 @@ def create_game_table():
                                               },
 
                                               {
-                                                  'AttributeName': 'Status',
+                                                  'AttributeName': 'Statusnow',
                                                   'KeyType': 'RANGE',
                                               }
 
@@ -69,7 +69,7 @@ def create_game_table():
                                               },
 
                                               {
-                                                  'AttributeName': 'Status',
+                                                  'AttributeName': 'Statusnow',
                                                   'KeyType': 'RANGE',
                                               }
                                           ],
@@ -104,7 +104,7 @@ def create_new_game(game_id, creator, joiner, creator_side, games_table):
         "GameId": game_id,
         "HostId": creator,
         "FoeId": joiner,
-        "Status": status,
+        "Statusnow": status,
         "OUser": o_user,
         "Turn": ' ',
         "Winner": 'unfinished',
@@ -183,7 +183,7 @@ def update_turn(item, position, current_player, games_table):
     host = item["HostId"]
     foe = item["FoeId"]
     game_id = item["GameId"]
-    status = item["Status"]
+    status = item["Statusnow"]
     if status != 'Playing' or current_player != item["Turn"]:
         return False
     if item["OUser"] == current_player:
@@ -217,7 +217,7 @@ def update_turn(item, position, current_player, games_table):
 
 def join_existed_game(item, games_table, user_id):
     game_id = item["GameId"]
-    status = item["Status"]
+    status = item["Statusnow"]
     host_id = item["HostId"]
     if status != 'Pending':
         return 'Not a valid game'
@@ -225,7 +225,7 @@ def join_existed_game(item, games_table, user_id):
     if item["OUser"] != host_id:
         new_item = games_table.update_item(
             Key={'GameId': game_id},
-            UpdateExpression="set FoeId = :u, Status = :r, OUser = :o, Turn = :t",
+            UpdateExpression="set FoeId = :u, Statusnow = :r, OUser = :o, Turn = :t",
             ExpressionAttributeValues={
                 ':u': str(user_id), ':r': status, ':o': str(user_id), ':t': str(host_id)},
             ReturnValues="ALL_NEW"
@@ -233,7 +233,7 @@ def join_existed_game(item, games_table, user_id):
     else:
         new_item = games_table.update_item(
             Key={'GameId': game_id},
-            UpdateExpression="set Status = :r, FoeId = :u, Turn = :t",
+            UpdateExpression="set Statusnow = :r, FoeId = :u, Turn = :t",
             ExpressionAttributeValues={
                 ':r': status, ':u': str(user_id), ':t': str(user_id)},
             ReturnValues="ALL_NEW"
@@ -251,7 +251,7 @@ def get_invites(user, games_table):
                                      Limit=10,
                                      # KeyConditionExpression='FoeId = :r AND Status = :s',
                                      KeyConditionExpression=Key('FoeId').eq(str(user)) & Key(
-                                         'Status').begins_with("Pending")
+                                         'Statusnow').begins_with("Pending")
                                      # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "Pending"}
                                      )['Items']
     n = min(10, len(game_invites))
@@ -262,7 +262,7 @@ def get_invites(user, games_table):
 
 def finish_game(item, games_table, winner_id):
     # winnerID: str of winner's id or 'draw'
-    if item["Status"] != 'Playing':
+    if item["Statusnow"] != 'Playing':
         return 'Not a valid game'
     game_id = item["GameId"]
     status = "Finished"
@@ -270,7 +270,7 @@ def finish_game(item, games_table, winner_id):
 
     new_item = games_table.update_item(
         Key={'GameId': game_id},
-        UpdateExpression="set Status = :r, Winner = :w",
+        UpdateExpression="set Statusnow = :r, Winner = :w",
         ExpressionAttributeValues={
             ':r': status, ':w': str(winner_id)},
         ReturnValues="ALL_NEW"
@@ -323,7 +323,7 @@ def get_games_status(user, status, games_table):
                                    Select='ALL_ATTRIBUTES',
                                    Limit=10,
                                    # KeyConditionExpression='FoeId = :r AND Status = :s',
-                                   KeyConditionExpression=Key('HostId').eq(str(user)) & Key('Status').begins_with(
+                                   KeyConditionExpression=Key('HostId').eq(str(user)) & Key('Statusnow').begins_with(
                                        status)
                                    # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "Pending"}
                                    )
@@ -332,7 +332,7 @@ def get_games_status(user, status, games_table):
                                   Limit=10,
                                   # KeyConditionExpression='FoeId = :r AND Status = :s',
                                   KeyConditionExpression=Key('FoeId').eq(str(user)) & Key(
-                                      'Status').begins_with(status)
+                                      'Statusnow').begins_with(status)
                                   # ExpressionAttributeValues={ ":r" : str(user) , ":s" : "Pending"}
                                   )
     if not host_games:

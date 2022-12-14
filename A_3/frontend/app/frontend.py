@@ -185,11 +185,14 @@ def game(game_id, player_name):
     front.logger.debug(str(game_data))
     if not game_data:
         return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
-    status = game_data["Status"]
+    status = game_data["Statusnow"]
     if status == 'Finished':
         return refresh(game_id, player_name)
     game_board = ddb.make_board(game_data)
     foe_name = game_data['FoeId']
+    if player_name==foe_name:
+        foe_name=game_data['HostId']
+    
     if not foe_name or foe_name == 'None':  # the foe does not come in
         board = board_render(game_id, player_name, game_board, [])
         front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
@@ -227,10 +230,10 @@ def game(game_id, player_name):
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
             board = board_render(game_id, player_name, game_board, [])
-    return render_template('game.html', board=board, surr='/game/' + str(game_id) + '/surrender', message=message)
+    return render_template('game.html', board=board, surr='/game/' + str(game_id)+'/' + str(player_name) + '/surrender', message=message)
 
 
-@front.route('/game/<game_id>/<player_name>/move/<loc>')
+@front.route('/game/<game_id>/<player_name>/move/<loc>', methods=['POST'])
 def move(game_id, player_name, loc):
     """Player makes a move
 
@@ -299,7 +302,7 @@ def gameData(game_id):
     if the page should be refreshed
     """
     game_data = ddb.get(game_id, get_db())
-    status = game_data["Status"]
+    status = game_data["Statusnow"]
     turn = game_data["Turn"]
 
     return jsonify(gameId = game_id,
@@ -321,7 +324,7 @@ def refresh(game_id, player_name):
         return render_template('result', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
     front.logger.debug(str(game_data))
-    status = game_data["Status"]
+    status = game_data["Statusnow"]
     if status == 'Finished':
         if game_data['OUser'] == player_name:
             tile = 'O'
@@ -330,8 +333,8 @@ def refresh(game_id, player_name):
         player_score = ddb.count_disks(game_data, tile)
         front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score))
         winner = game_data['Winner']
-        response = ddb.teardown(game_id, get_db())
-        front.logger.debug(str(response))
+        # response = ddb.teardown(game_id, get_db())
+        # front.logger.debug(str(response))
         if winner == player_name:
             # upload the final score to the ranking
             return render_template('result', title='You Win :)',
