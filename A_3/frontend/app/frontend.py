@@ -85,7 +85,7 @@ def get_rank():
         front.logger.debug('\n* Error: ' + str(error))
         return render_template('result.html', title='500 Internal Server Error',
                                message='Server Failure.')
-    rank.sort(key=lambda content: content[1])
+    rank.sort(key=lambda content: content[1], reverse=True)
     return render_template('rank.html', rank=rank[:10])
 
 
