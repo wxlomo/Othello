@@ -264,6 +264,8 @@ def move(game_id, player_name, loc):
     position = [str(x_start) + str(y_start)]
     for p in valid:
         position.append(str(p[0]) + str(p[1]))
+    print(valid)
+    print(position)
     ddb.update_turn(game_data, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
@@ -368,8 +370,8 @@ def board_render(game_id, player_name, board, valid_moves):
     if valid_moves:
         for x, y in valid_moves:
             updated_board[x][y] = '.'
-    for y in range(len(updated_board)):
-        for x in range(len(updated_board[y])):
+    for x in range(len(updated_board)):
+        for y in range(len(updated_board[x])):
             current_disk = updated_board[x][y]
             if current_disk == 'X':
                 updated_list.append('<img src="/static/img/dark.svg">')
@@ -432,7 +434,8 @@ def valid_move(board, tile, x, y):
                     y_start -= y_direction
                     if x_start == x and y_start == y:
                         break
-                    tiles_to_flip.append([x, y])
+                    
+                    tiles_to_flip.append([x_start, y_start])
     board[x][y] = ' '  # restore the empty space
     return tiles_to_flip
 
