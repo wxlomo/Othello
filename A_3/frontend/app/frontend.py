@@ -131,7 +131,7 @@ def create_game():
     """
     player_name = escape(request.form['player_name'].strip())
     if not player_name or player_name == 'None' or player_name == 'draw':
-        return render_template('result', title='Invalid Player Name', message='Do not use spaces/None/draw as your player name')
+        return render_template('result.html', title='Invalid Player Name', message='Do not use spaces/None/draw as your player name')
     tile = request.form['player_side']
     front.logger.debug('\n* Creating a game with name: ' + str(player_name))
     game_id = str(hashlib.md5(player_name.encode('utf-8')).hexdigest())
@@ -152,18 +152,18 @@ def join_game():
     """
     player_name = escape(request.form['player_name'].strip())
     if not player_name or player_name == 'None' or player_name == 'draw':
-        return render_template('result', title='Invalid Player Name', message='Do not use spaces as your player name')
+        return render_template('result.html', title='Invalid Player Name', message='Do not use spaces as your player name')
     game_id = request.form['game_id']
     front.logger.debug(
         '\n* Joining a game with name: ' + str(player_name) + ' and game id: ' + str(game_id))
     game_data = ddb.get(game_id, get_db())
     if not game_data:
-        return render_template('result', title='Fail to Join the Game',
+        return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
     front.logger.debug(str(game_data))
     response = ddb.join_existed_game(game_data, get_db(), str(player_name))
     if response == 'Not a valid game':
-        return render_template('result', title='Fail to Join the Game',
+        return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
@@ -180,11 +180,11 @@ def game(game_id, player_name):
       str: the arguments for the Jinja template
     """
     if not player_name or not game_id:
-        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+        return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
     front.logger.debug(str(game_data))
     if not game_data:
-        return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+        return render_template('result.html', title='500 Internal Server Error', message='Failed to render the game board.')
     status = game_data["Statusnow"]
     if status == 'Finished':
         return refresh(game_id, player_name)
@@ -246,11 +246,11 @@ def move(game_id, player_name, loc):
       str: the arguments for the Jinja template
     """
     if not player_name or not game_id or not loc:
-        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+        return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
     front.logger.debug(str(game_data))
     if not game_data:
-        return render_template('result', title='500 Internal Server Error', message='Failed to render the game board.')
+        return render_template('result.html', title='500 Internal Server Error', message='Failed to render the game board.')
     game_board = ddb.make_board(game_data)
     x_start, y_start = loc[0], loc[1]
     if game_data['OUser'] == player_name:
@@ -259,7 +259,7 @@ def move(game_id, player_name, loc):
         tile = 'X'
     valid = valid_move(game_board, tile, int(x_start), int(y_start))
     if not valid:
-        return render_template('result', title='403 Forbidden', message='This move cannot be performed.')
+        return render_template('result.html', title='403 Forbidden', message='This move cannot be performed.')
     position = [str(x_start) + str(y_start)]
     for p in valid:
         position.append(str(p[0]) + str(p[1]))
@@ -280,7 +280,7 @@ def surrender(game_id, player_name):
       str: the arguments for the Jinja template
     """
     if not player_name or not game_id:
-        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+        return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
     front.logger.debug(str(game_data))
     if player_name == game_data['HostId']:
@@ -289,7 +289,7 @@ def surrender(game_id, player_name):
         winner = game_data['HostId']
     ddb.finish_game(game_data, get_db(), winner)
     front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
-    return render_template('result', title='You Lose :(', message='Sorry to hear your leave.')
+    return render_template('result.html', title='You Lose :(', message='Sorry to hear your leave.')
 
 
 @front.route('/gameData=<game_id>')
@@ -321,7 +321,7 @@ def refresh(game_id, player_name):
       str: the arguments for the Jinja template
     """
     if not player_name or not game_id:
-        return render_template('result', title='403 Forbidden', message='This page is not reachable.')
+        return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
     game_data = ddb.get(game_id, get_db())
     front.logger.debug(str(game_data))
     status = game_data["Statusnow"]
@@ -337,13 +337,13 @@ def refresh(game_id, player_name):
         # front.logger.debug(str(response))
         if winner == player_name:
             # upload the final score to the ranking
-            return render_template('result', title='You Win :)',
+            return render_template('result.html', title='You Win :)',
                                    message='Your final score is ' + str(player_score) + '.')
         elif winner != 'draw':
-            return render_template('result', title='You Lose :(',
+            return render_template('result.html', title='You Lose :(',
                                    message='Your final score is ' + str(player_score) + '.')
         else:
-            return render_template('result', title='Draw...', message='Your final score is ' + str(player_score) + '.')
+            return render_template('result.html', title='Draw...', message='Your final score is ' + str(player_score) + '.')
     else:
         front.logger.debug('\n* Refreshing the game board')
         return redirect('/game/' + str(game_id) + '/' + str(player_name))
