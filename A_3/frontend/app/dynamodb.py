@@ -4,7 +4,11 @@ from boto3.dynamodb.conditions import Key
 
 
 def get(game_id, games_table):
-    return games_table.get_item(Key={'GameId': game_id})['Item']
+    game=games_table.get_item(Key={'GameId': game_id})
+    if 'Item' in game:
+        return game['Item']
+    else:
+        return False
 
 
 def teardown(game_id, games_table):
