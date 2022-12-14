@@ -261,8 +261,6 @@ def move(game_id, player_name, loc):
     position = [str(x_start) + str(y_start)]
     for p in valid:
         position.append(str(p[0]) + str(p[1]))
-    print(valid)
-    print(position)
     ddb.update_turn(game_data, position, player_name, get_db())
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
