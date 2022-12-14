@@ -5,7 +5,7 @@
  * Author: Weixuan Yang
  * Date: Dec. 11, 2022
 """
-from . import front, dynamodb as ddb, games_table, rank_bucket
+from . import front, dynamodb as ddb, games_table, rank_bucket, ses
 from flask import render_template, request, redirect, escape, jsonify, json
 from uuid import uuid4
 
@@ -114,12 +114,35 @@ def create_game():
     """
     player_name = escape(request.form['player_name'].strip())
     if not player_name or player_name == 'None' or player_name == 'draw':
-        return render_template('result.html', title='Invalid Player Name', message='Do not use spaces/None/draw as your player name')
+        return render_template('result.html', title='Invalid Player Name',
+                               message='Do not use spaces/None/draw as your player name')
     tile = request.form['player_side']
     front.logger.debug('\n* Creating a game with name: ' + str(player_name))
     game_id = str(uuid4())
     response = ddb.create_new_game(game_id, str(player_name), 'None', tile, games_table)
     front.logger.debug(str(response))
+    '''
+    invite_email = request.form['invite_email'].strip()
+    try:
+        ses.send_email(
+            Destination={'ToAddresses': [invite_email,],},
+            Message={
+                'Body': {
+                    'Text': {
+                        'Charset': "UTF-8",
+                        'Data': 'Greetings! Your friend invite you to join them playing Othello! Please join use their player name: ' + str(player_name),
+                    },
+                },
+                'Subject': {
+                    'Charset': "UTF-8",
+                    'Data': 'Game Invitation from ' + str(player_name),
+                },
+            },
+            source='othello.endreim@outlook.com',
+        )
+    except Exception as error:
+        front.logger.debug('\n* Error: ' + str(error))
+    '''
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
@@ -135,7 +158,8 @@ def join_game():
     """
     player_name = escape(request.form['player_name'].strip())
     if not player_name or player_name == 'None' or player_name == 'draw':
-        return render_template('result.html', title='Invalid Player Name', message='Do not use spaces as your player name')
+        return render_template('result.html', title='Invalid Player Name',
+                               message='Do not use spaces as your player name')
     host_name = request.form['host_name']
     front.logger.debug(
         '\n* Joining a game with name: ' + str(player_name) + ' and host name: ' + str(host_name))
@@ -168,7 +192,8 @@ def game(game_id, player_name):
     game_data = ddb.get(game_id, games_table)
     front.logger.debug(str(game_data))
     if not game_data:
-        return render_template('result.html', title='500 Internal Server Error', message='Failed to render the game board.')
+        return render_template('result.html', title='500 Internal Server Error',
+                               message='Failed to render the game board.')
     status = game_data["Statusnow"]
     if status == 'Finished':
         return refresh(game_id, player_name)
@@ -176,7 +201,7 @@ def game(game_id, player_name):
     foe_name = game_data['FoeId']
     if player_name == foe_name:
         foe_name = game_data['HostId']
-    
+
     if not foe_name or foe_name == 'None':  # the foe does not come in
         board = board_render(game_id, player_name, game_board, [])
         front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
@@ -214,10 +239,11 @@ def game(game_id, player_name):
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
             board = board_render(game_id, player_name, game_board, [])
-    gameData = {'gameId': game_id, 'status': status, 'turn': game_data['Turn']};
-    gameJson = json.dumps(gameData)
-    return render_template('game.html', board=board, surr='/game/' + str(game_id)+'/' + str(player_name) + '/surrender', message=message, gameId=game_id,
-                            gameJson=gameJson)
+    game_json = json.dumps({'gameId': game_id, 'status': status, 'turn': game_data['Turn']})
+    return render_template('game.html', board=board,
+                           surr='/game/' + str(game_id) + '/' + str(player_name) + '/surrender', message=message,
+                           gameId=game_id,
+                           gameJson=game_json)
 
 
 @front.route('/game/<game_id>/<player_name>/move/<loc>', methods=['POST'])
@@ -237,7 +263,8 @@ def move(game_id, player_name, loc):
     game_data = ddb.get(game_id, games_table)
     front.logger.debug(str(game_data))
     if not game_data:
-        return render_template('result.html', title='500 Internal Server Error', message='Failed to render the game board.')
+        return render_template('result.html', title='500 Internal Server Error',
+                               message='Failed to render the game board.')
     game_board = ddb.make_board(game_data)
     x_start, y_start = loc[0], loc[1]
     if game_data['OUser'] == player_name:
@@ -334,7 +361,8 @@ def refresh(game_id, player_name):
             return render_template('result.html', title='You Lose :(',
                                    message='Your final score is ' + str(player_score) + '.')
         else:
-            return render_template('result.html', title='Draw...', message='Your final score is ' + str(player_score) + '.')
+            return render_template('result.html', title='Draw...',
+                                   message='Your final score is ' + str(player_score) + '.')
     else:
         front.logger.debug('\n* Refreshing the game board')
         return redirect('/game/' + str(game_id) + '/' + str(player_name))
@@ -422,7 +450,7 @@ def valid_move(board, tile, x, y):
                     y_start -= y_direction
                     if x_start == x and y_start == y:
                         break
-                    
+
                     tiles_to_flip.append([x_start, y_start])
     board[x][y] = ' '  # restore the empty space
     return tiles_to_flip

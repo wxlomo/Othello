@@ -102,4 +102,9 @@ if 'Games' not in db_client.list_tables()['TableNames']:
     games_table.wait_until_exists()
 games_table = db.Table('Games')
 
+ses = boto3.client('ses',
+                   region_name=config.aws_key['aws_region'],
+                   aws_access_key_id=config.aws_key['aws_access_key_id'],
+                   aws_secret_access_key=config.aws_key['aws_secret_access_key'])
+
 from . import frontend
