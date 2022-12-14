@@ -24,10 +24,10 @@
             <div>
                 <h3 class="float-md-start mb-0">Othello</h3>
                 <nav class="nav nav-masthead justify-content-center float-md-end">
-                    <a class="nav-link fw-bold py-1 px-0 {% block play %}{% endblock play %}" href="index.html">Play</a>
-                    <a class="nav-link fw-bold py-1 px-0 {% block rule %}{% endblock rule %}" href="rule.html">Rule</a>
-                    <a class="nav-link fw-bold py-1 px-0 {% block rank %}{% endblock rank %}" href="rank.html">Rank</a>
-                    <a class="nav-link fw-bold py-1 px-0 {% block about %}{% endblock about %}" href="about.html">About</a>
+                    <a class="nav-link fw-bold py-1 px-0 {% block play %}{% endblock play %}" href="{{url_for('get_home')}}">Play</a>
+                    <a class="nav-link fw-bold py-1 px-0 {% block rule %}{% endblock rule %}" href="{{url_for('get_rule')}}">Rule</a>
+                    <a class="nav-link fw-bold py-1 px-0 {% block rank %}{% endblock rank %}" href="{{url_for('get_rank')}}">Rank</a>
+                    <a class="nav-link fw-bold py-1 px-0 {% block about %}{% endblock about %}" href="{{url_for('get_about')}}">About</a>
                 </nav>
             </div>
         </header>
