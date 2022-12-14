@@ -5,32 +5,9 @@
  * Author: Weixuan Yang
  * Date: Dec. 11, 2022
 """
-import boto3
-from . import front, config, dynamodb as ddb
-from flask import render_template, request, g, redirect, escape, jsonify
+from . import front, dynamodb as ddb, games_table, rank_bucket
+from flask import render_template, request, redirect, escape, jsonify
 from uuid import uuid4
-
-
-def get_db():
-    """Get the game table.
-    Args:
-      n/a
-    Returns:
-      dynamoDB Object: data
-    """
-    if 'db' not in g:
-        dynamodb_client = boto3.client('dynamodb',
-                                       region_name=config.aws_key['aws_region'],
-                                       aws_access_key_id=config.aws_key['aws_access_key_id'],
-                                       aws_secret_access_key=config.aws_key['aws_secret_access_key'])
-        dynamodb = boto3.resource('dynamodb',
-                                  region_name=config.aws_key['aws_region'],
-                                  aws_access_key_id=config.aws_key['aws_access_key_id'],
-                                  aws_secret_access_key=config.aws_key['aws_secret_access_key'])
-        if 'Games' not in dynamodb_client.list_tables()['TableNames']:
-            ddb.create_game_table()
-        g.game_table = dynamodb.Table('Games')
-    return g.game_table
 
 
 @front.route('/')
@@ -70,7 +47,7 @@ def get_join():
       str: the arguments for the Jinja template
     """
     all_hosts = []
-    all_items = ddb.get_invites('None', get_db())
+    all_items = ddb.get_invites('None', games_table)
     for i in all_items:
         all_hosts.append(str(i['HostId']))
         front.logger.debug('\n* Current pending games: ' + str(i['GameId']))
@@ -100,8 +77,16 @@ def get_rank():
     Returns:
       str: the arguments for the Jinja template
     """
-    rank = []  # Retrieve the rank data from S3
-    return render_template('rank.html', rank=rank)
+    rank = []
+    try:
+        for obj in rank_bucket.objects.all():
+            rank.append([obj.key, obj.body])
+    except Exception as error:
+        front.logger.debug('\n* Error: ' + str(error))
+        return render_template('result.html', title='500 Internal Server Error',
+                               message='Server Failure.')
+    rank.sort(key=lambda content: content[1])
+    return render_template('rank.html', rank=rank[:10])
 
 
 @front.route('/about')
@@ -133,7 +118,7 @@ def create_game():
     tile = request.form['player_side']
     front.logger.debug('\n* Creating a game with name: ' + str(player_name))
     game_id = str(uuid4())
-    response = ddb.create_new_game(game_id, str(player_name), 'None', tile, get_db())
+    response = ddb.create_new_game(game_id, str(player_name), 'None', tile, games_table)
     front.logger.debug(str(response))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
@@ -154,12 +139,13 @@ def join_game():
     host_name = request.form['host_name']
     front.logger.debug(
         '\n* Joining a game with name: ' + str(player_name) + ' and host name: ' + str(host_name))
-    game_data = ddb.get_games_status(host_name, "Pending", get_db())
+    game_data = ddb.get_games_status(host_name, "Pending", games_table)
+    front.logger.debug(str(game_data))
     if not game_data:
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
-    front.logger.debug(str(game_data))
-    response = ddb.join_existed_game(game_data, get_db(), str(player_name))
+    response = ddb.join_existed_game(game_data, games_table, str(player_name))
+    front.logger.debug(str(response))
     if response == 'Not a valid game':
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
@@ -179,7 +165,7 @@ def game(game_id, player_name):
     """
     if not player_name or not game_id:
         return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
-    game_data = ddb.get(game_id, get_db())
+    game_data = ddb.get(game_id, games_table)
     front.logger.debug(str(game_data))
     if not game_data:
         return render_template('result.html', title='500 Internal Server Error', message='Failed to render the game board.')
@@ -209,7 +195,7 @@ def game(game_id, player_name):
             if not moves:  # impossible to move
                 message = 'No valid move!'
                 if get_valid_moves(game_board, other_tile):
-                    ddb.update_turn(game_data, [], player_name, get_db())
+                    ddb.update_turn(game_data, [], player_name, games_table)
                 else:
                     player_score = ddb.count_disks(game_data, tile)
                     foe_score = ddb.count_disks(game_data, other_tile)
@@ -218,12 +204,12 @@ def game(game_id, player_name):
                         foe_name = game_data['FoeId']
                     else:
                         foe_name = game_data['HostId']
-                    if player_score > foe_score:
-                        ddb.finish_game(game_data, get_db(), player_name)
-                    elif player_score < foe_score:
-                        ddb.finish_game(game_data, get_db(), foe_name)
-                    else:
-                        ddb.finish_game(game_data, get_db(), 'draw')
+                    if player_score > foe_score:  # player wins
+                        ddb.finish_game(game_data, games_table, player_name)
+                    elif player_score < foe_score:  # foe wins
+                        ddb.finish_game(game_data, games_table, foe_name)
+                    else:  # draw
+                        ddb.finish_game(game_data, games_table, 'draw')
             board = board_render(game_id, player_name, game_board, moves)
         else:
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
@@ -245,7 +231,7 @@ def move(game_id, player_name, loc):
     """
     if not player_name or not game_id or not loc:
         return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
-    game_data = ddb.get(game_id, get_db())
+    game_data = ddb.get(game_id, games_table)
     front.logger.debug(str(game_data))
     if not game_data:
         return render_template('result.html', title='500 Internal Server Error', message='Failed to render the game board.')
@@ -261,7 +247,7 @@ def move(game_id, player_name, loc):
     position = [str(x_start) + str(y_start)]
     for p in valid:
         position.append(str(p[0]) + str(p[1]))
-    ddb.update_turn(game_data, position, player_name, get_db())
+    ddb.update_turn(game_data, position, player_name, games_table)
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect('/game/' + str(game_id) + '/' + str(player_name))
 
@@ -279,13 +265,13 @@ def surrender(game_id, player_name):
     """
     if not player_name or not game_id:
         return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
-    game_data = ddb.get(game_id, get_db())
+    game_data = ddb.get(game_id, games_table)
     front.logger.debug(str(game_data))
     if player_name == game_data['HostId']:
         winner = game_data['FoeId']
     else:
         winner = game_data['HostId']
-    ddb.finish_game(game_data, get_db(), winner)
+    ddb.finish_game(game_data, games_table, winner)
     front.logger.debug('\n* A player with name' + str(player_name) + ' surrender in game ' + str(game_id))
     return render_template('result.html', title='You Lose :(', message='Sorry to hear your leave.')
 
@@ -299,7 +285,7 @@ def data(game_id):
     Returns a JSON representation of the game to support AJAX to poll to see
     if the page should be refreshed
     """
-    game_data = ddb.get(game_id, get_db())
+    game_data = ddb.get(game_id, games_table)
     status = game_data["Statusnow"]
     turn = game_data["Turn"]
 
@@ -319,7 +305,7 @@ def refresh(game_id, player_name):
     """
     if not player_name or not game_id:
         return render_template('result.html', title='403 Forbidden', message='This page is not reachable.')
-    game_data = ddb.get(game_id, get_db())
+    game_data = ddb.get(game_id, games_table)
     front.logger.debug(str(game_data))
     status = game_data["Statusnow"]
     if status == 'Finished':
@@ -330,10 +316,15 @@ def refresh(game_id, player_name):
         player_score = ddb.count_disks(game_data, tile)
         front.logger.debug('\n* The player' + str(player_name) + ' has score ' + str(player_score))
         winner = game_data['Winner']
-        # response = ddb.teardown(game_id, get_db())
+        # response = ddb.teardown(game_id, games_table)
         # front.logger.debug(str(response))
         if winner == player_name:
-            # upload the final score to the ranking
+            try:
+                rank_bucket.put_object(Key=winner, Body=player_score)
+            except Exception as error:
+                front.logger.debug('\n* Error: ' + str(error))
+                return render_template('result.html', title='500 Internal Server Error',
+                                       message='Server Failure.')
             return render_template('result.html', title='You Win :)',
                                    message='Your final score is ' + str(player_score) + '.')
         elif winner != 'draw':
