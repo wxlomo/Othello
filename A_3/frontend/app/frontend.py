@@ -243,11 +243,14 @@ def game(game_id, player_name):
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
             board = board_render(game_id, player_name, game_board, [])
     game_json = json.dumps({'gameId': game_id, 'status': status, 'turn': game_data['Turn']})
+    surr=url_for('surrender', game_id=str(game_id),player_name=str(player_name))
+    data=url_for('data', game_id=str(game_id))
     return render_template('game.html', board=board,
-                           surr='/game/' + str(game_id) + '/' + str(player_name) + '/surrender', message=message,
+                           surr=surr, message=message,
                            gameId=game_id,
-                           gameJson=game_json)
-
+                           gameJson=game_json,
+                           data=data)
+# '/game/' + str(game_id) + '/' + str(player_name) + '/surrender'
 
 @front.route('/game/<game_id>/<player_name>/move/<loc>', methods=['POST'])
 def move(game_id, player_name, loc):

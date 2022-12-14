@@ -14,6 +14,9 @@
     var gameId = '{{gameId}}';
     var loadDate = new Date();
     var interval;
+    dataurl='{{data}}';
+    console.log(dataurl)
+    
     if (game.status != "FINISHED") {
       interval = window.setInterval(checkChanged, 1000);
     }
@@ -23,7 +26,7 @@
       window.clearInterval(interval);
       xmlHttp = new XMLHttpRequest();  
       xmlHttp.onreadystatechange = isChanged;
-      xmlHttp.open('GET', '/data/' + gameId, true);
+      xmlHttp.open('GET', dataurl, true);
       xmlHttp.send(null);
     }
     
@@ -47,7 +50,7 @@
     }
     
 </script>
-<form action="/play" method="post" enctype="multipart/form-data">
+<form action="play" method="post" enctype="multipart/form-data">
     <div class="board-container">
         {% for row in board %}
         <div>{{row|safe}}</div>
