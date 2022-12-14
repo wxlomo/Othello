@@ -6,7 +6,7 @@
 -->
 {% extends "layout.html" %}
 {% block bg %}bg2{% endblock bg %}
-{% block rank %}active{% endblock rank %}
+{% block bg %}url({{url_for('static', filename='img/bg2.jpg')}}){% endblock bg %}
 {% block content %}
 <h1 class="cover-heading">A Minute to Learn...<br> A Lifetime to Master.</h1>
 <br>

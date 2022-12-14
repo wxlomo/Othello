@@ -5,7 +5,7 @@
  * Date: December 10, 2022
 -->
 {% extends "layout.html" %}
-{% block bg %}bg2{% endblock bg %}
+{% block bg %}url({{url_for('static', filename='img/bg2.jpg')}}){% endblock bg %}
 {% block content %}
 <h1 class="cover-heading">New Game</h1>
 <br>

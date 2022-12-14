@@ -18,7 +18,7 @@
     <title>Othello</title>
 </head>
 
-<body class="d-flex h-100 text-center text-bg-dark" style="background-size:100% 100%; background-image: url({{url_for('static', filename='img/{% block bg %}{% endblock bg %}.jpg')}});">
+<body class="d-flex h-100 text-center text-bg-dark" style="background-size:100% 100%; background-image: {% block bg %}{% endblock bg %};">
     <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
         <header class="mb-auto">
             <div>

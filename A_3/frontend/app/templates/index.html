@@ -5,7 +5,7 @@
  * Date: December 10, 2022
 -->
 {% extends "layout.html" %}
-{% block bg %}bg{% endblock bg %}
+{% block bg %}url({{url_for('static', filename='img/bg.jpg')}}){% endblock bg %}
 {% block play %}active{% endblock play %}
 {% block content %}
 <p class="lead">Othello, aka Reversi, is a strategy board game for two players. Its name was selected from the Shakespearean play "Othello, the Moor of Venice".
