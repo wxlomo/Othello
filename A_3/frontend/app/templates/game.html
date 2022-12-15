@@ -7,7 +7,24 @@
 {% extends "layout.html" %}
 {% block bg %}url({{url_for('static', filename='img/bg2.jpg')}}){% endblock bg %}
 {% block content %}
-<script src="{{url_for('static', filename='js/refresh.js')}}"></script>
+<script lang="text/javascript">
+var game = JSON.parse('{{game|safe}}');
+if (game.status != "Finished") {
+    window.setInterval(checkChanged, 1000);
+}
+function checkChanged() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '{{data}}', true);
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            if (JSON.stringify(JSON.parse(xhr.responseText)) != JSON.stringify(game)) {
+                location.reload();  // refresh the page if new data comes in
+            }
+        }
+    };
+    xhr.send(null);
+}
+</script>
 <form action="play" method="post" enctype="multipart/form-data">
     <div class="board-container">
         {% for row in board %}
