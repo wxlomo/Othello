@@ -43,8 +43,7 @@ if 'Games' not in db_client.list_tables()['TableNames']:
                                       {'AttributeName': 'GameId', 'AttributeType': 'S'},
                                       {'AttributeName': 'FoeId', 'AttributeType': 'S'},
                                       {'AttributeName': 'HostId', 'AttributeType': 'S'},
-                                      {'AttributeName': 'Statusnow', 'AttributeType': 'S'},
-                                      {'AttributeName': 'Times', 'AttributeType': 'S'}
+                                      {'AttributeName': 'Statusnow', 'AttributeType': 'S'}
                                   ],
                                   ProvisionedThroughput={
                                       'ReadCapacityUnits': 1,
@@ -87,24 +86,6 @@ if 'Games' not in db_client.list_tables()['TableNames']:
                                               {
                                                   'AttributeName': 'Statusnow',
                                                   'KeyType': 'RANGE',
-                                              }
-                                          ],
-                                          'Projection': {
-                                              'ProjectionType': 'ALL',
-
-                                          },
-                                          'ProvisionedThroughput': {
-                                              'ReadCapacityUnits': 1,
-                                              'WriteCapacityUnits': 1
-                                          }
-                                      },
-                                      {
-                                          'IndexName': 'Times',
-                                          'KeySchema': [
-                                              {
-                                                  'AttributeName': 'Times',
-                                                  'KeyType': 'HASH',
-
                                               }
                                           ],
                                           'Projection': {
