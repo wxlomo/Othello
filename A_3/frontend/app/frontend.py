@@ -144,7 +144,7 @@ def create_game():
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
     '''
-    return redirect(url_for('game', game_id=str(game_id),player_name=str(player_name)))
+    return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
 # redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
@@ -175,8 +175,7 @@ def join_game():
     if response == 'Not a valid game':
         return render_template('result.html', title='Fail to Join the Game',
                                message='The game you want to join does not exist, please try again.')
-    return redirect(url_for('game', game_id=str(game_data['GameId']),player_name=str(player_name)))
-# redirect('/game/' + str(game_data['GameId']) + '/' + str(player_name))
+    return redirect(url_for('game', game_id=str(game_data['GameId']), player_name=str(player_name)))
 
 
 @front.route('/game/<game_id>/<player_name>')
@@ -243,14 +242,14 @@ def game(game_id, player_name):
             message = 'Now it is your foe ' + str(foe_name) + "'s turn!"
             board = board_render(game_id, player_name, game_board, [])
     game_json = json.dumps({'gameId': game_id, 'status': status, 'turn': game_data['Turn']})
-    surr=url_for('surrender', game_id=str(game_id),player_name=str(player_name))
-    data=url_for('data', game_id=str(game_id))
+    surr = url_for('surrender', game_id=str(game_id), player_name=str(player_name))
+    curr = url_for('data', game_id=str(game_id))
     return render_template('game.html', board=board,
                            surr=surr, message=message,
                            gameId=game_id,
                            gameJson=game_json,
-                           data=data)
-# '/game/' + str(game_id) + '/' + str(player_name) + '/surrender'
+                           data=curr)
+
 
 @front.route('/game/<game_id>/<player_name>/move/<loc>', methods=['POST'])
 def move(game_id, player_name, loc):
@@ -285,7 +284,7 @@ def move(game_id, player_name, loc):
         position.append(str(p[0]) + str(p[1]))
     ddb.update_turn(game_data, position, player_name, games_table)
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
-    return redirect(url_for('game', game_id=str(game_id),player_name=str(player_name)))
+    return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
 # redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
@@ -372,8 +371,7 @@ def refresh(game_id, player_name):
                                    message='Your final score is ' + str(player_score) + '.')
     else:
         front.logger.debug('\n* Refreshing the game board')
-        return redirect(url_for('game', game_id=str(game_id),player_name=str(player_name)))
-    # redirect('/game/' + str(game_id) + '/' + str(player_name))
+        return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
 
 
 def board_render(game_id, player_name, board, valid_moves):
@@ -402,10 +400,9 @@ def board_render(game_id, player_name, board, valid_moves):
             elif current_disk == 'O':
                 updated_list.append('<img src="/static/img/light.svg">')
             elif current_disk == '.':
-                moveurl=url_for('move', game_id=str(game_id),player_name=str(player_name),loc=str(index[x][y]))
-                print (moveurl)
+                move_url = url_for('move', game_id=str(game_id), player_name=str(player_name), loc=str(index[x][y]))
                 updated_list.append(
-                    '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+moveurl+'" >')
+                    '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+move_url+'" >')
             else:
                 updated_list.append(' ')
     return updated_list
