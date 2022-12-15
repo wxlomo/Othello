@@ -320,6 +320,9 @@ def data(game_id):
     if the page should be refreshed
     """
     game_data = ddb.get(game_id, games_table)
+    if not game_data:
+        return render_template('result.html', title='500 Internal Server Error',
+                               message='Failed to render the game board.')
     status = game_data["Statusnow"]
     turn = game_data["Turn"]
     return jsonify(gameId=game_id, status=status, turn=turn)
@@ -399,11 +402,9 @@ def board_render(game_id, player_name, board, valid_moves):
             elif current_disk == '.':
                 move_url = url_for('move', game_id=str(game_id), player_name=str(player_name), loc=str(index[x][y]))
                 updated_list.append(
-<<<<<<< Updated upstream
                     '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+move_url+'" >')
-=======
-                    '<input type="image" src="/dev/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+moveurl+'" >')
->>>>>>> Stashed changes
+
+
             else:
                 updated_list.append(' ')
     return updated_list
