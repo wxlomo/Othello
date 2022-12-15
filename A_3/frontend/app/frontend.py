@@ -393,13 +393,17 @@ def board_render(game_id, player_name, board, valid_moves):
         for y in range(len(updated_board[x])):
             current_disk = updated_board[x][y]
             if current_disk == 'X':
-                updated_list.append('<img src="/static/img/dark.svg">')
+                updated_list.append('<img src="/dev/static/img/dark.svg">')
             elif current_disk == 'O':
-                updated_list.append('<img src="/static/img/light.svg">')
+                updated_list.append('<img src="/dev/static/img/light.svg">')
             elif current_disk == '.':
                 move_url = url_for('move', game_id=str(game_id), player_name=str(player_name), loc=str(index[x][y]))
                 updated_list.append(
+<<<<<<< Updated upstream
                     '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+move_url+'" >')
+=======
+                    '<input type="image" src="/dev/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+moveurl+'" >')
+>>>>>>> Stashed changes
             else:
                 updated_list.append(' ')
     return updated_list
