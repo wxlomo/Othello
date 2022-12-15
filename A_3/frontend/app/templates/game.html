@@ -7,49 +7,7 @@
 {% extends "layout.html" %}
 {% block bg %}url({{url_for('static', filename='img/bg2.jpg')}}){% endblock bg %}
 {% block content %}
-<script lang="text/javascript">
-    var gameRaw = '{{gameJson|safe}}';
-    var game = JSON.parse(gameRaw);
-    var gameString = JSON.stringify(game);
-    var gameId = '{{gameId}}';
-    var loadDate = new Date();
-    var interval;
-    dataurl='{{data}}';
-    console.log(dataurl)
-    
-    if (game.status != "FINISHED") {
-      interval = window.setInterval(checkChanged, 1000);
-    }
-    var xmlHttp;
-    
-    function checkChanged() {
-      window.clearInterval(interval);
-      xmlHttp = new XMLHttpRequest();  
-      xmlHttp.onreadystatechange = isChanged;
-      xmlHttp.open('GET', dataurl, true);
-      xmlHttp.send(null);
-    }
-    
-    function isChanged() {
-      if (xmlHttp.readyState === 4) {
-        if (xmlHttp.status === 200) {
-          var latest = JSON.stringify(JSON.parse(xmlHttp.responseText));
-          var loaded = gameString;
-          if (latest != loaded) {
-            location.reload();
-          }
-        }
-        var currentDate = new Date();
-        var elapsedMs = currentDate.getTime() - loadDate.getTime();
-        if (elapsedMs < (5 * 60 * 1000)) {
-            interval = window.setInterval(checkChanged, 1000);
-        } else {
-            console.log('Stopping refresh after ' + elapsedMs + ' ms');
-        }
-      }
-    }
-    
-</script>
+<script src="{{url_for('static', filename='js/refresh.js')}}"></script>
 <form action="play" method="post" enctype="multipart/form-data">
     <div class="board-container">
         {% for row in board %}

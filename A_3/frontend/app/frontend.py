@@ -198,7 +198,7 @@ def game(game_id, player_name):
                                message='Failed to render the game board.')
     status = game_data["Statusnow"]
     if status == 'Finished':
-        return refresh(game_id, player_name)
+        return settlement(game_id, player_name)
     game_board = ddb.make_board(game_data)
     foe_name = game_data['FoeId']
     if player_name == foe_name:
@@ -246,8 +246,7 @@ def game(game_id, player_name):
     curr = url_for('data', game_id=str(game_id))
     return render_template('game.html', board=board,
                            surr=surr, message=message,
-                           gameId=game_id,
-                           gameJson=game_json,
+                           game=game_json,
                            data=curr)
 
 
@@ -285,7 +284,6 @@ def move(game_id, player_name, loc):
     ddb.update_turn(game_data, position, player_name, games_table)
     front.logger.debug('\n* A move is made on game: ' + str(game_id) + ' at ' + str(loc))
     return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
-# redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
 @front.route('/game/<game_id>/<player_name>/surrender', methods=['POST'])
@@ -324,13 +322,12 @@ def data(game_id):
     game_data = ddb.get(game_id, games_table)
     status = game_data["Statusnow"]
     turn = game_data["Turn"]
-
     return jsonify(gameId=game_id, status=status, turn=turn)
 
 
-@front.route('/game/<game_id>/<player_name>/refresh')
-def refresh(game_id, player_name):
-    """Refresh the game board, check if the game is finished
+@front.route('/game/<game_id>/<player_name>/settlement')
+def settlement(game_id, player_name):
+    """settle the game, return the result
 
     Args:
       game_id (str): the identity of the game
