@@ -387,6 +387,9 @@ def board_render(game_id, player_name, board, valid_moves):
       list: the updated lattices list to update the page
     """
     index = [[str(outer) + str(inner) for inner in range(len(board[outer]))] for outer in range(len(board))]
+    dark_url = url_for('static', filename='img/dark.svg')
+    light_url = url_for('static', filename='img/light.svg')
+    placeable_url = url_for('static', filename='img/placeable.svg')
     updated_board = board
     updated_list = []
     if valid_moves:
@@ -396,15 +399,13 @@ def board_render(game_id, player_name, board, valid_moves):
         for y in range(len(updated_board[x])):
             current_disk = updated_board[x][y]
             if current_disk == 'X':
-                updated_list.append('<img src="/dev/static/img/dark.svg">')
+                updated_list.append('<img src="' + dark_url + '">')
             elif current_disk == 'O':
-                updated_list.append('<img src="/dev/static/img/light.svg">')
+                updated_list.append('<img src="' + light_url + '">')
             elif current_disk == '.':
                 move_url = url_for('move', game_id=str(game_id), player_name=str(player_name), loc=str(index[x][y]))
                 updated_list.append(
-                    '<input type="image" src="/static/img/placeable.svg" alt="Submit" class="placeable" formaction= "'+move_url+'" >')
-
-
+                    '<input type="image" src="' + placeable_url + '" alt="Submit" class="placeable" formaction= "' + move_url + '" >')
             else:
                 updated_list.append(' ')
     return updated_list
