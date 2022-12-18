@@ -123,26 +123,27 @@ def create_game():
     front.logger.debug(str(response))
     game_id = response['GameId']
     invite_email = request.form['invite_email'].strip()
-    try:
-        response = ses.send_email(
-            Destination={'ToAddresses': [invite_email,],},
-            Message={
-                'Body': {
-                    'Text': {
+    if invite_email:
+        try:
+            response = ses.send_email(
+                Destination={'ToAddresses': [invite_email,],},
+                Message={
+                    'Body': {
+                        'Text': {
+                            'Charset': "UTF-8",
+                            'Data': 'Greetings! Your friend invite you to join them playing Othello! Please join use their player name: ' + str(player_name),
+                        },
+                    },
+                    'Subject': {
                         'Charset': "UTF-8",
-                        'Data': 'Greetings! Your friend invite you to join them playing Othello! Please join use their player name: ' + str(player_name),
+                        'Data': 'Game Invitation from ' + str(player_name),
                     },
                 },
-                'Subject': {
-                    'Charset': "UTF-8",
-                    'Data': 'Game Invitation from ' + str(player_name),
-                },
-            },
-            Source='othello.endreim@outlook.com',
-        )
-        front.logger.debug(str(response))
-    except Exception as error:
-        front.logger.debug('\n* Error: ' + str(error))
+                Source='othello.endreim@outlook.com',
+            )
+            front.logger.debug(str(response))
+        except Exception as error:
+            front.logger.debug('\n* Error: ' + str(error))
     return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
 
 
