@@ -145,7 +145,6 @@ def create_game():
         front.logger.debug('\n* Error: ' + str(error))
     '''
     return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
-# redirect('/game/' + str(game_id) + '/' + str(player_name))
 
 
 @front.route('/join_game', methods=['POST'])
@@ -352,8 +351,6 @@ def settlement(game_id, player_name):
         player_score = ddb.count_disks(game_data, tile)
         front.logger.debug('\n* The player ' + str(player_name) + ' has score ' + str(player_score))
         winner = game_data['Winner']
-        # response = ddb.teardown(game_id, games_table)
-        # front.logger.debug(str(response))
         if winner == player_name:
             try:
                 rank_bucket.put_object(Key=winner, Body=player_score.to_bytes(8, byteorder='big'))
@@ -476,3 +473,116 @@ def get_valid_moves(board, tile):
         list: the list of the valid moves
     """
     return [[x, y] for x in range(len(board)) for y in range(len(board[x])) if valid_move(board, tile, x, y)]
+
+
+@front.route('/api/join', methods=['POST'])
+def get_join():
+    """get id of the existing games
+
+    Args:
+      n/a
+
+    Returns:
+      json: the response of the request
+    """
+    all_hosts = []
+    all_items = ddb.get_invites('None', games_table)
+    for i in all_items:
+        all_hosts.append(str(i['GameId']))
+        front.logger.debug('\n* Current pending games: ' + str(i['GameId']))
+    return {
+        'success': 'true',
+        'games': all_hosts
+    }
+
+
+@front.route('/api/create_game', methods=['POST'])
+def create_game():
+    """Create a new game.
+
+    Args:
+      n/a
+
+    Returns:
+      json: the response of the request
+    """
+    player_name = escape(request.form['player_name'].strip())
+    if not player_name or player_name == 'None' or player_name == 'draw':
+        return {
+            'success': 'false',
+            'error': {
+                'code': 400,
+                'message': 'Bad Request: Invalid player name.'
+            }
+        }
+    tile = request.form['player_side']
+    if not tile:
+        return {
+            'success': 'false',
+            'error': {
+                'code': 400,
+                'message': 'Bad Request: Invalid player side.'
+            }
+        }
+    front.logger.debug('\n* Creating a game with name: ' + str(player_name))
+    game_id = str(uuid4())
+    response = ddb.create_new_game(game_id, str(player_name), 'None', tile, games_table)
+    front.logger.debug(str(response))
+    return {
+        'success': 'true',
+        'game': {
+            'id': response['GameId'],
+            'time': response['Times']
+        }
+    }
+
+
+@front.route('/api/join_game', methods=['POST'])
+def join_game():
+    """Join an existing game.
+
+    Args:
+      n/a
+
+    Returns:
+      json: the response of the request
+    """
+    player_name = escape(request.form['player_name'].strip())
+    if not player_name or player_name == 'None' or player_name == 'draw':
+        return {
+            'success': 'false',
+            'error': {
+                'code': 400,
+                'message': 'Bad Request: Invalid player name.'
+            }
+        }
+    game_id = request.form['game_id']
+    front.logger.debug(
+        '\n* Joining a game with name: ' + str(player_name) + ' and game id: ' + str(game_id))
+    game_data = ddb.get(game_id, games_table)
+    front.logger.debug(str(game_data))
+    if not game_data:
+        return {
+            'success': 'false',
+            'error': {
+                'code': 500,
+                'message': 'Internal Server Error: dynamoDB error'
+            }
+        }
+    response = ddb.join_existed_game(game_data, games_table, str(player_name))
+    front.logger.debug(str(response))
+    if response == 'Not a valid game':
+        return {
+            'success': 'false',
+            'error': {
+                'code': 404,
+                'message': 'Not Found: Invalid game id.'
+            }
+        }
+    return {
+        'success': 'true',
+        'game': {
+            'id': response['GameId'],
+            'time': response['Times']
+        }
+    }
