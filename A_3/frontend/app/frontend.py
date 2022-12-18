@@ -131,7 +131,7 @@ def create_game():
                     'Body': {
                         'Text': {
                             'Charset': "UTF-8",
-                            'Data': 'Greetings! Your friend invite you to join them playing Othello! Please join use their player name: ' + str(player_name),
+                            'Data': 'Greetings! Your friend invite you to join them playing Othello! Website: https://1j20o5dhh4.execute-api.us-east-1.amazonaws.com/dev Please join use their player name: ' + str(player_name),
                         },
                     },
                     'Subject': {
