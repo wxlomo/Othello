@@ -50,12 +50,9 @@ def join_test_latency():
     Returns:
       float: the seconds of latency to handle the request
     """
-    total_elapsed_seconds = 0.0
-    game_id = uuid4()
     try:
-        response = requests.post(base_url + 'api/join_game', data={'player_name': uuid4(), 'game_id': game_id}, verify=False)
-        total_elapsed_seconds += response.elapsed.total_seconds()
-        return total_elapsed_seconds
+        response = requests.post(base_url + 'api/join_game', data={'player_name': uuid4(), 'game_id': uuid4()}, verify=False)
+        return response.elapsed.total_seconds()
     except Exception as error:
         print('* Error ' + str(error))
         return 10.0
@@ -72,11 +69,10 @@ def create_test_runtime():
     """
     try:
         response = requests.post(base_url + str('api/create_game/'), verify=False, data={'player_name': uuid4(), 'tile': 'Dark'})
-        print(response.json())
-        return response.elapsed.total_seconds()
+        return 1
     except Exception as error:
         print('* Error ' + str(error))
-        return 10.0
+        return 0
 
 
 def join_test_runtime():
@@ -89,13 +85,7 @@ def join_test_runtime():
       int: 1 if success, 0 if fail
     """
     try:
-        response = requests.post(base_url + 'api/join/', verify=False)
-    except Exception as error:
-        print('* Error ' + str(error))
-        return 0
-    game_id = choice(response.json()['games'])
-    try:
-        response = requests.post(base_url + 'api/join_game/', data={'player_name': uuid4(), 'game_id': game_id}, verify=False)
+        response = requests.post(base_url + 'api/join_game/', data={'player_name': uuid4(), 'game_id': uuid4()}, verify=False)
         return 1
     except Exception as error:
         print('* Error ' + str(error))
@@ -147,7 +137,7 @@ def throughput_test(time_window, mode):
         while time() < time_window:
             futures = []
             with ThreadPoolExecutor(max_workers=10) as executor:
-                futures += {executor.submit(create_test_latency): i for i in total_thread}
+                futures += {executor.submit(create_test_runtime): i for i in total_thread}
                 for future in as_completed(futures):
                     if time() > time_window:
                         executor.shutdown()
@@ -157,7 +147,7 @@ def throughput_test(time_window, mode):
         while time() < time_window:
             futures = []
             with ThreadPoolExecutor(max_workers=10) as executor:
-                futures += {executor.submit(join_test_latency): i for i in total_thread}
+                futures += {executor.submit(join_test_runtime): i for i in total_thread}
                 for future in as_completed(futures):
                     if time() > time_window:
                         executor.shutdown()
@@ -205,7 +195,7 @@ def throughput_figure():
         sleep(2)
         data.append([time_window, throughput_test(time_window, 'join'), 'Join'])
     df = pd.DataFrame(data, columns=['Units of time (seconds)', 'Maximum number of requests', 'Mode'])
-    df.to_csv('latency.csv', encoding='utf-8')
+    df.to_csv('throughput.csv', encoding='utf-8')
     fig = sns.catplot(data=df, x='Units of time (seconds)', y='Maximum number of requests', kind='bar', hue='Mode', ci=None)
     fig.fig.savefig('throughput.png')
 
