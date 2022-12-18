@@ -4,6 +4,6 @@ from app import front
 
 
 if __name__ == '__main__':
-    front.run()
+    front.run(debug=True)
 
 

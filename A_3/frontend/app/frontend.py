@@ -124,7 +124,7 @@ def create_game():
     game_id = response['GameId']
     invite_email = request.form['invite_email'].strip()
     try:
-        ses.send_email(
+        response = ses.send_email(
             Destination={'ToAddresses': [invite_email,],},
             Message={
                 'Body': {
@@ -138,8 +138,9 @@ def create_game():
                     'Data': 'Game Invitation from ' + str(player_name),
                 },
             },
-            source='othello.endreim@outlook.com',
+            Source='othello.endreim@outlook.com',
         )
+        front.logger.debug(str(response))
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
     return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
