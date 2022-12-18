@@ -32,14 +32,14 @@ def lambda_handler(event, context):
         'body': json.dumps('Item Deleted')
     }
   
-  def lambda_handler(event, context):
-    table_name = "Games"
-    attribute_name = "Statusnow"
-    attribute_value = "Pending"
-    attribute_value2 = "Playing"
-    dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-    table = dynamodb.Table(table_name)
-    result = table.scan(
+    def lambda_handler(event, context):
+        table_name = "Games"
+        attribute_name = "Statusnow"
+        attribute_value = "Pending"
+        attribute_value2 = "Playing"
+        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+        table = dynamodb.Table(table_name)
+        result = table.scan(
         FilterExpression=f"{attribute_name} = :val",
         ExpressionAttributeValues={
             ":val": attribute_value

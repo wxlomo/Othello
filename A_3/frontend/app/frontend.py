@@ -122,7 +122,6 @@ def create_game():
     response = ddb.create_new_game(game_id, str(player_name), 'None', tile, games_table)
     front.logger.debug(str(response))
     game_id = response['GameId']
-    '''
     invite_email = request.form['invite_email'].strip()
     try:
         ses.send_email(
@@ -143,7 +142,6 @@ def create_game():
         )
     except Exception as error:
         front.logger.debug('\n* Error: ' + str(error))
-    '''
     return redirect(url_for('game', game_id=str(game_id), player_name=str(player_name)))
 
 
