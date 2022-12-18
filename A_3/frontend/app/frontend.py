@@ -474,7 +474,7 @@ def get_valid_moves(board, tile):
 
 
 @front.route('/api/join', methods=['POST'])
-def get_join():
+def get_join_api():
     """get id of the existing games
 
     Args:
@@ -495,7 +495,7 @@ def get_join():
 
 
 @front.route('/api/create_game', methods=['POST'])
-def create_game():
+def create_game_api():
     """Create a new game.
 
     Args:
@@ -536,7 +536,7 @@ def create_game():
 
 
 @front.route('/api/join_game', methods=['POST'])
-def join_game():
+def join_game_api():
     """Join an existing game.
 
     Args:
