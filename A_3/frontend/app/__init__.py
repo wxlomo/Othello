@@ -21,10 +21,10 @@ s3 = boto3.resource('s3',
                     region_name=config.aws_key['aws_region'],
                     aws_access_key_id=config.aws_key['aws_access_key_id'],
                     aws_secret_access_key=config.aws_key['aws_secret_access_key'])
-if 'othello-ranking' not in s3_client.list_buckets()['Buckets']:
-    rank_bucket = s3.create_bucket(Bucket='othello-ranking', ACL='public-read-write')
+if 'wx-othello-ranking' not in s3_client.list_buckets()['Buckets']:
+    rank_bucket = s3.create_bucket(Bucket='wx-othello-ranking', ACL='public-read-write')
     rank_bucket.wait_until_exists()
-rank_bucket = s3.Bucket(name='othello-ranking')
+rank_bucket = s3.Bucket(name='wx-othello-ranking')
 
 db_client = boto3.client('dynamodb',
                          region_name=config.aws_key['aws_region'],
