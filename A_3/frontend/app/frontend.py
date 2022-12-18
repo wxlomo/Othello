@@ -206,7 +206,7 @@ def game(game_id, player_name):
     if not foe_name or foe_name == 'None':  # the foe does not come in
         board = board_render(game_id, player_name, game_board, [])
         front.logger.debug('\n* Current game board: ' + str(board) + ', current foe name: ' + str(foe_name))
-        message = 'Waiting for another player to join...'
+        message = 'Waiting for another player...'
     else:  # game is ready
         message = 'Now it is your turn!'
         if game_data['OUser'] == player_name:
