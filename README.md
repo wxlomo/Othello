@@ -1,4 +1,4 @@
-# ECE1779 Introduction to Cloud Computing Project
+# Othello - An online board game based on AWS
 
 <b>Group 9: </b> Haotian Chen, Haozhe Sun, Weixuan Yang
 
